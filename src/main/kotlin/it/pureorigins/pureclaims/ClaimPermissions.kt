@@ -40,5 +40,7 @@ data class ClaimPermissions(
             canOpenChests = true,
             canDamageMobs = true
         )
+
+        fun none() = ClaimPermissions()
     }
 }

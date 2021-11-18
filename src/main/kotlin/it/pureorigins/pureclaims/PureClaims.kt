@@ -17,14 +17,19 @@ import net.minecraft.world.World
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 object PureClaims : ModInitializer {
     private lateinit var database: Database
     lateinit var server: MinecraftServer
     internal var claimsCache: HashMap<World, HashMap<ChunkPos, ClaimedChunk>> = HashMap()
+    internal var permsCache: HashMap<UUID, HashMap<UUID, ClaimPermissions>> = HashMap()
 
-    fun getClaimedChunk(world: ServerWorld, chunkPos: ChunkPos): ClaimedChunk =
+    fun getClaimedChunkFromDB(world: ServerWorld, chunkPos: ChunkPos): ClaimedChunk =
         transaction(database) { PlayerClaimsTable.getClaim(world, chunkPos) }
+
+    fun getPermissionsFromDB(uuid: UUID): HashMap<UUID, ClaimPermissions> =
+        transaction(database) { HashMap(PermissionsTable.getPermissions(uuid)) }
 
     override fun onInitialize() {
         val (db, commands) = json.readFileAs(configFile("fancyparticles.json"), Config())
@@ -35,10 +40,10 @@ object PureClaims : ModInitializer {
         CommandRegistrationCallback.EVENT.register { d, _ ->
             d.register(ClaimCommands(commands).command)
         }
+        Events.registerCacheHandlers()
         Events.registerEvents()
         println("PureClaims has been initialized!")
     }
-
 
 
     fun getWorld(name: String): ServerWorld? = server.getWorld(RegistryKey.of(Registry.WORLD_KEY, Identifier(name)))
