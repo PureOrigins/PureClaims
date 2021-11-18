@@ -71,15 +71,15 @@ object Events {
             if (claimsCache[world]?.contains(pos) == true) {
                 val claimedChunk = claimsCache[world]!![pos]
                 if (claimedChunk != null)
-                    if (claimedChunk.owner == player.uuid)
-                        return@register ActionResult.PASS
-                    else if (permsCache[claimedChunk.owner]?.get(player.uuid)?.canInteract == true)
-                        return@register ActionResult.PASS
-                    else {
-                        val blockState = world.getBlockState(block.blockPos)
-                        if (blockState.block == Blocks.CHEST || blockState.block == Blocks.TRAPPED_CHEST) {
-                            if (permsCache[claimedChunk.owner]?.get(player.uuid)?.canOpenChests == true)
-                                return@register ActionResult.PASS
+                    when {
+                        claimedChunk.owner == player.uuid -> return@register ActionResult.PASS
+                        permsCache[claimedChunk.owner]?.get(player.uuid)?.canInteract == true -> return@register ActionResult.PASS
+                        else -> {
+                            val blockState = world.getBlockState(block.blockPos)
+                            if (blockState.block == Blocks.CHEST || blockState.block == Blocks.TRAPPED_CHEST) {
+                                if (permsCache[claimedChunk.owner]?.get(player.uuid)?.canOpenChests == true)
+                                    return@register ActionResult.PASS
+                            }
                         }
                     }
                 return@register ActionResult.FAIL
