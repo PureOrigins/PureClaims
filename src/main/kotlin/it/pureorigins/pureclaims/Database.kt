@@ -6,7 +6,6 @@ import org.jetbrains.exposed.sql.*
 import java.util.*
 
 object PlayerClaimsTable : Table("player_claims") {
-    val id = integer("id").autoIncrement()
     val world = text("world")
     val chunkPos = long("chunk_pos")
     val uniqueId = uuid("player_id")
@@ -15,9 +14,9 @@ object PlayerClaimsTable : Table("player_claims") {
     fun getClaims(uniqueId: UUID): List<ClaimedChunk> = select { PlayerClaimsTable.uniqueId eq uniqueId }
         .map { it.toClaimedChunk() }
 
-    fun getClaim(world: World, chunkPos: ChunkPos): ClaimedChunk = select {
+    fun getClaim(world: World, chunkPos: ChunkPos): ClaimedChunk? = select {
         (PlayerClaimsTable.world eq world.registryKey.value.toString()) and (PlayerClaimsTable.chunkPos eq chunkPos.toLong()) }
-        .map { it.toClaimedChunk() }[0]
+        .map { it.toClaimedChunk() }.getOrNull(0)
 
 
     fun add(chunk: ClaimedChunk): Boolean = insertIgnore {

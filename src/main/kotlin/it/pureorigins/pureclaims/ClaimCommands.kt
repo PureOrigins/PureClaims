@@ -15,7 +15,6 @@ class ClaimCommands(private val config: Config) {
     private val claimCommand
         get() = literal(config.claim.commandName) {
             requiresPermission("fancyparticles.claims.claim")
-            TODO("not implemented yet")
         }
 
     @Serializable

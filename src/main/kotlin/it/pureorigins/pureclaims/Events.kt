@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.block.Blocks
+import net.minecraft.text.Text
 import net.minecraft.util.ActionResult
 import net.minecraft.util.math.ChunkPos
 
@@ -18,7 +19,8 @@ object Events {
             claimsCache[serverWorld] = HashMap()
         }
         ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
-            claimsCache[world]!![chunk.pos] = PureClaims.getClaimedChunkFromDB(world, chunk.pos)
+            if(PureClaims.getClaimedChunkFromDB(world, chunk.pos) != null)
+            claimsCache[world]!![chunk.pos] = PureClaims.getClaimedChunkFromDB(world, chunk.pos)!!
         }
         ServerChunkEvents.CHUNK_UNLOAD.register { world, chunk ->
             claimsCache[world]?.remove(chunk.pos)
@@ -47,6 +49,7 @@ object Events {
                         return@register true
                     else if (permsCache[claimedChunk.owner]?.get(player.uuid)?.canEdit == true)
                         return@register true
+                player.sendMessage(Text.of("Non hai i permessi"),false)
                 return@register false
             }
             return@register true
@@ -61,6 +64,7 @@ object Events {
                         return@register ActionResult.PASS
                     else if (permsCache[claimedChunk.owner]?.get(player?.uuid)?.canDamageMobs == true)
                         return@register ActionResult.PASS
+                player.sendMessage(Text.of("Non hai i permessi"),false)
                 return@register ActionResult.FAIL
             }
             return@register ActionResult.PASS
@@ -82,6 +86,7 @@ object Events {
                             }
                         }
                     }
+                player.sendMessage(Text.of("Non hai i permessi"),false)
                 return@register ActionResult.FAIL
             }
             return@register ActionResult.PASS
