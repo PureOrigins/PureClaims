@@ -9,12 +9,8 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.block.Blocks
-import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
-import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.math.ChunkPos
-import net.minecraft.world.World
 
 object Events {
     fun registerCacheHandlers() {
@@ -70,8 +66,8 @@ object Events {
             return@register ActionResult.PASS
         }
 
-        UseBlockCallback.EVENT.register { player: PlayerEntity, world: World, _: Hand, blockHitResult: BlockHitResult ->
-            val pos = ChunkPos(blockHitResult.blockPos)
+        UseBlockCallback.EVENT.register { player, world, _, block ->
+            val pos = ChunkPos(block.blockPos)
             if (claimsCache[world]?.contains(pos) == true) {
                 val claimedChunk = claimsCache[world]!![pos]
                 if (claimedChunk != null)
@@ -80,7 +76,7 @@ object Events {
                     else if (permsCache[claimedChunk.owner]?.get(player.uuid)?.canInteract == true)
                         return@register ActionResult.PASS
                     else {
-                        val blockState = world.getBlockState(blockHitResult.blockPos)
+                        val blockState = world.getBlockState(block.blockPos)
                         if (blockState.block == Blocks.CHEST || blockState.block == Blocks.TRAPPED_CHEST) {
                             if (permsCache[claimedChunk.owner]?.get(player.uuid)?.canOpenChests == true)
                                 return@register ActionResult.PASS
