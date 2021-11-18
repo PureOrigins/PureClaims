@@ -1,0 +1,35 @@
+{
+    "schemaVersion":1,
+    "id":"pureclaims",
+    "version":"${version}",
+    "name":"PureClaims",
+    "description":"this mod allows your players to claim their own lands",
+    "authors":[
+        "Raymark97"
+    ],
+    "contact":{
+        "homepage":"https://github.com/PureOrigins/PureClaims",
+        "issues":"https://github.com/PureOrigins/PureClaims/issues",
+        "sources":"https://github.com/PureOrigins/PureClaims"
+    },
+    "license":"Proprietary",
+    "icon":"assets/pureclaims/icon.png",
+    "environment":"*",
+    "entrypoints":{
+        "main":[
+            {
+                "adapter":"kotlin",
+                "value":"it.pureorigins.pureclaims.PureClaims"
+            }
+        ]
+    },
+    "depends":{
+        "fabricloader":">=0.11.6",
+        "fabric":"*",
+        "fabric-language-kotlin":">=1.6.3+kotlin.1.5.21",
+        "minecraft":"1.17.x",
+        "java":">=16",
+        "pureconfiguration":"^1.0.0",
+        "kotlin-database":  "^1.0.0"
+    }
+}
