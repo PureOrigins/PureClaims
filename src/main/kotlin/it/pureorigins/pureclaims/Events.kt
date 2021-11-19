@@ -1,45 +1,33 @@
 package it.pureorigins.pureclaims
 
 import it.pureorigins.pureclaims.PureClaims.claimsCache
-import it.pureorigins.pureclaims.PureClaims.permsCache
+import it.pureorigins.pureclaims.PureClaims.permissionsCache
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents
-import net.fabricmc.fabric.api.event.player.AttackEntityCallback
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
-import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.block.Blocks
-import net.minecraft.text.Text
-import net.minecraft.util.ActionResult
-import net.minecraft.util.math.ChunkPos
 
 object Events {
     fun registerCacheHandlers() {
-        ServerWorldEvents.LOAD.register { _, serverWorld ->
-            claimsCache[serverWorld] = HashMap()
-        }
         ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
-            if(PureClaims.getClaimedChunkFromDB(world, chunk.pos) != null)
-            claimsCache[world]!![chunk.pos] = PureClaims.getClaimedChunkFromDB(world, chunk.pos)!!
+            val pos = chunk.pos
+            val claim = PureClaims.getClaimedChunkFromDB(world, pos) ?: return@register
+            claimsCache[world to pos] = claim
         }
         ServerChunkEvents.CHUNK_UNLOAD.register { world, chunk ->
-            claimsCache[world]?.remove(chunk.pos)
+            claimsCache -= world to chunk.pos
         }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-            PureClaims.getPermissionsFromDB(handler.player.uuid).forEach {
-                if (permsCache[it.key] == null) permsCache[it.key] = HashMap()
-                permsCache[it.key]!![handler.player.uuid] = it.value
+            val uuid = handler.player.uuid
+            PureClaims.getPermissionsFromDB(uuid).forEach { (ownerUuid, permissions) ->
+                permissionsCache.computeIfAbsent(uuid) { HashMap() }[ownerUuid] = permissions
             }
         }
-
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            PureClaims.getPermissionsFromDB(handler.player.uuid).forEach {
-                permsCache[it.key]?.remove(handler.player.uuid)
-            }
+            permissionsCache -= handler.player.uuid
         }
     }
 
     fun registerEvents() {
+        /*
         PlayerBlockBreakEvents.BEFORE.register { world, player, blockPos, _, _ ->
             val pos = ChunkPos(blockPos)
             if (claimsCache[world]?.contains(pos) == true) {
@@ -92,5 +80,6 @@ object Events {
             }
             return@register ActionResult.PASS
         }
+        */
     }
 }

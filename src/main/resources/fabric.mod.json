@@ -31,5 +31,8 @@
         "java":">=16",
         "pureconfiguration":"^1.0.0",
         "kotlin-database":  "^1.0.0"
-    }
+    },
+    "mixins": [
+        "pureclaims.mixins.json"
+    ]
 }

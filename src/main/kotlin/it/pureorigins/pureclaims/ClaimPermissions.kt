@@ -1,10 +1,10 @@
 package it.pureorigins.pureclaims
 
 data class ClaimPermissions(
-    val canEdit: Boolean = false,
-    val canInteract: Boolean = false,
-    val canOpenChests: Boolean = false,
-    val canDamageMobs: Boolean = false
+    val canEdit: Boolean,
+    val canInteract: Boolean,
+    val canOpenChests: Boolean,
+    val canDamageMobs: Boolean
 ) {
     init {
         if (canEdit) check(canOpenChests && canInteract)
@@ -34,13 +34,18 @@ data class ClaimPermissions(
     )
 
     companion object {
-        fun all() = ClaimPermissions(
+        val ALL = ClaimPermissions(
             canEdit = true,
             canInteract = true,
             canOpenChests = true,
             canDamageMobs = true
         )
 
-        fun none() = ClaimPermissions()
+        val NONE = ClaimPermissions(
+            canEdit = false,
+            canInteract = false,
+            canOpenChests = false,
+            canDamageMobs = false
+        )
     }
 }
