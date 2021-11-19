@@ -3,6 +3,7 @@ package it.pureorigins.pureclaims
 import net.minecraft.util.math.ChunkPos
 import net.minecraft.world.World
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
 object PlayerClaimsTable : Table("player_claims") {
@@ -28,6 +29,9 @@ object PlayerClaimsTable : Table("player_claims") {
     fun remove(chunk: ClaimedChunk): Boolean = deleteWhere {
         (chunkPos eq chunk.chunkPos.toLong()) and (world eq chunk.world)
     } > 0
+
+    fun getClaimCount(uuid: UUID?): Long = select { PlayerClaimsTable.uniqueId eq uniqueId }
+    .count()
 }
 
 object PermissionsTable : Table("claim_permissions") {

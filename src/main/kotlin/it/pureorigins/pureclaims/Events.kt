@@ -49,7 +49,7 @@ object Events {
                         return@register true
                     else if (permsCache[claimedChunk.owner]?.get(player.uuid)?.canEdit == true)
                         return@register true
-                player.sendMessage(Text.of("Non hai i permessi"),false)
+                player.sendMessage(Text.of(PureClaims.settings.no_perm),false)
                 return@register false
             }
             return@register true
@@ -64,11 +64,12 @@ object Events {
                         return@register ActionResult.PASS
                     else if (permsCache[claimedChunk.owner]?.get(player?.uuid)?.canDamageMobs == true)
                         return@register ActionResult.PASS
-                player.sendMessage(Text.of("Non hai i permessi"),false)
+                player.sendMessage(Text.of(PureClaims.settings.no_perm),false)
                 return@register ActionResult.FAIL
             }
             return@register ActionResult.PASS
         }
+
 
         UseBlockCallback.EVENT.register { player, world, _, block ->
             val pos = ChunkPos(block.blockPos)
@@ -86,7 +87,7 @@ object Events {
                             }
                         }
                     }
-                player.sendMessage(Text.of("Non hai i permessi"),false)
+                player.sendMessage(Text.of(PureClaims.settings.no_perm),false)
                 return@register ActionResult.FAIL
             }
             return@register ActionResult.PASS

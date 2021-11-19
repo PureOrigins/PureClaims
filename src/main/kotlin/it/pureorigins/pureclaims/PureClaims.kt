@@ -25,6 +25,7 @@ object PureClaims : ModInitializer {
     lateinit var server: MinecraftServer
     internal var claimsCache: HashMap<World, HashMap<ChunkPos, ClaimedChunk>> = HashMap()
     internal var permsCache: HashMap<UUID, HashMap<UUID, ClaimPermissions>> = HashMap()
+    lateinit var settings: Config.Settings
 
     fun getClaimedChunkFromDB(world: ServerWorld, chunkPos: ChunkPos): ClaimedChunk? =
         transaction(database) { PlayerClaimsTable.getClaim(world, chunkPos) }
@@ -32,8 +33,13 @@ object PureClaims : ModInitializer {
     fun getPermissionsFromDB(uuid: UUID): HashMap<UUID, ClaimPermissions> =
         transaction(database) { HashMap(PermissionsTable.getPermissions(uuid)) }
 
+    fun getClaimCount(uuid: UUID?): Long =
+        transaction(database) { PlayerClaimsTable.getClaimCount(uuid) }
+
+
     override fun onInitialize() {
-        val (db, commands) = json.readFileAs(configFile("fancyparticles.json"), Config())
+        val (db, commands, settings) = json.readFileAs(configFile("pureclaims.json"), Config())
+        this.settings = settings
         ServerLifecycleEvents.SERVER_STARTED.register { server = it }
         require(db.url.isNotEmpty()) { "Database url is empty" }
         database = Database.connect(db.url, user = db.username, password = db.password)
@@ -55,10 +61,12 @@ object PureClaims : ModInitializer {
 
     fun getWorld(name: String): ServerWorld? = server.getWorld(RegistryKey.of(Registry.WORLD_KEY, Identifier(name)))
 
+
     @Serializable
     data class Config(
         val database: Database = Database(),
-        val commands: ClaimCommands.Config = ClaimCommands.Config()
+        val commands: ClaimCommands.Config = ClaimCommands.Config(),
+        val settings: Settings = Settings()
     ) {
         @Serializable
         data class Database(
@@ -66,6 +74,12 @@ object PureClaims : ModInitializer {
             val url: String = "jdbc:sqlite:claims.db",
             val username: String = "",
             val password: String = ""
+        )
+
+        @Serializable
+        data class Settings(
+            val no_perm: String = "You don't have permission to do that!",
+            val maxClaims: Int = 10
         )
     }
 }
