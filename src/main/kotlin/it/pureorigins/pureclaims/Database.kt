@@ -1,7 +1,10 @@
 package it.pureorigins.pureclaims
 
+import net.minecraft.server.MinecraftServer
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.ChunkPos
+import net.minecraft.util.registry.Registry
+import net.minecraft.util.registry.RegistryKey
 import net.minecraft.world.World
 import org.jetbrains.exposed.sql.*
 import java.util.*
@@ -25,11 +28,11 @@ object PlayerClaimsTable : Table("player_claims") {
     fun add(chunk: ClaimedChunk): Boolean = insertIgnore {
         it[playerUniqueId] = chunk.owner
         it[chunkPos] = chunk.chunkPos.toLong()
-        it[world] = chunk.worldId.toString()
+        it[world] = chunk.world.registryKey.value.toString()
     }.insertedCount > 0
 
     fun remove(chunk: ClaimedChunk): Boolean = deleteWhere {
-        (chunkPos eq chunk.chunkPos.toLong()) and (world eq chunk.worldId.toString())
+        (chunkPos eq chunk.chunkPos.toLong()) and (world eq chunk.world.registryKey.value.toString())
     } > 0
 
     fun getClaimCount(playerUniqueId: UUID): Long = select { PlayerClaimsTable.playerUniqueId eq playerUniqueId }.count()
@@ -61,9 +64,9 @@ object PermissionsTable : Table("claim_permissions") {
     } > 0
 }
 
-private fun ResultRow.toClaimedChunk() = ClaimedChunk(
+private fun ResultRow.toClaimedChunk(server: MinecraftServer = PureClaims.server) = ClaimedChunk(
     get(PlayerClaimsTable.playerUniqueId),
-    Identifier(get(PlayerClaimsTable.world)),
+    server.getWorld(RegistryKey.of(Registry.WORLD_KEY, Identifier(get(PlayerClaimsTable.world)))) ?: error("Unknown world '${get(PlayerClaimsTable.world)}'"),
     ChunkPos(get(PlayerClaimsTable.chunkPos))
 )
 
