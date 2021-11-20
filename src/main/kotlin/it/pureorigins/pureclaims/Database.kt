@@ -25,11 +25,11 @@ object PlayerClaimsTable : Table("player_claims") {
     fun add(chunk: ClaimedChunk): Boolean = insertIgnore {
         it[playerUniqueId] = chunk.owner
         it[chunkPos] = chunk.chunkPos.toLong()
-        it[world] = chunk.world.toString()
+        it[world] = chunk.worldId.toString()
     }.insertedCount > 0
 
     fun remove(chunk: ClaimedChunk): Boolean = deleteWhere {
-        (chunkPos eq chunk.chunkPos.toLong()) and (world eq chunk.world.toString())
+        (chunkPos eq chunk.chunkPos.toLong()) and (world eq chunk.worldId.toString())
     } > 0
 
     fun getClaimCount(playerUniqueId: UUID): Long = select { PlayerClaimsTable.playerUniqueId eq playerUniqueId }.count()

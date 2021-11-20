@@ -5,10 +5,14 @@ import kotlinx.serialization.Serializable
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.ChunkPos
+import net.minecraft.util.registry.Registry
+import net.minecraft.util.registry.RegistryKey
 import net.minecraft.world.World
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -33,6 +37,26 @@ object PureClaims : ModInitializer {
     fun getPermissions(player: ServerPlayerEntity, claim: ClaimedChunk): ClaimPermissions {
         return permissionsCache[player.uuid]?.get(claim.owner)
             ?: (if (claim.owner == player.uuid) ClaimPermissions.ALL else ClaimPermissions.NONE)
+    }
+
+    fun isClaimed(world:World, chunkPos: ChunkPos): Boolean {
+        return world to chunkPos in claimsCache
+    }
+
+    fun getClaim(world: World, chunkPos: ChunkPos):ClaimedChunk? {
+        return claimsCache[world to chunkPos]
+    }
+
+
+    fun addClaim(player: ServerPlayerEntity, chunkPos: ChunkPos) {
+        val claim = ClaimedChunk(player, chunkPos)
+        transaction(database) { PlayerClaimsTable.add(claim) }
+        claimsCache[player.world to chunkPos] = claim
+    }
+
+    fun removeClaim(player: ServerPlayerEntity, claim: ClaimedChunk) {
+        transaction(database) { PlayerClaimsTable.remove(claim) }
+        claimsCache -= player.world to claim.chunkPos
     }
     
     fun checkPermissions(player: ServerPlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
@@ -62,7 +86,8 @@ object PureClaims : ModInitializer {
             claimsCache[handler.player.world to ChunkPos(0, 0)] = ClaimedChunk(UUID.fromString("00000000-0000-0000-0000-000000000000"), Identifier("test"), ChunkPos(0,0))
         }
     }
-    
+
+
     @Serializable
     data class Config(
         val database: Database = Database(),
