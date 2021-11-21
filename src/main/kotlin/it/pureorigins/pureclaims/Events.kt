@@ -1,31 +1,6 @@
 package it.pureorigins.pureclaims
 
-import it.pureorigins.pureclaims.PureClaims.claimsCache
-import it.pureorigins.pureclaims.PureClaims.permissionsCache
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-
 object Events {
-    fun registerCacheHandlers() {
-        ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
-            val pos = chunk.pos
-            val claim = PureClaims.getClaimedChunkFromDB(world, pos) ?: return@register
-            claimsCache[world to pos] = claim
-        }
-        ServerChunkEvents.CHUNK_UNLOAD.register { world, chunk ->
-            claimsCache -= world to chunk.pos
-        }
-        ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-            val uuid = handler.player.uuid
-            PureClaims.getPermissionsFromDB(uuid).forEach { (ownerUuid, permissions) ->
-                permissionsCache.computeIfAbsent(uuid) { HashMap() }[ownerUuid] = permissions
-            }
-        }
-        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            permissionsCache -= handler.player.uuid
-        }
-    }
-
     fun registerEvents() {
         /*
         PlayerBlockBreakEvents.BEFORE.register { world, player, blockPos, _, _ ->

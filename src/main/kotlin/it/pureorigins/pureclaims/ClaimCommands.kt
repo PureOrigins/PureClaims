@@ -24,8 +24,8 @@ class ClaimCommands(private val config: Config) {
                 when {
                     PureClaims.isClaimed(player.world, chunkPos) ->
                         source.sendFeedback(config.add.alreadyClaimed?.templateText())
-                    PureClaims.getClaimCount(player.uuid) >= PureClaims.settings.maxClaims ->
-                        source.sendFeedback(config.add.noClaimSlotsAvailable?.templateText())
+                    // PureClaims.getClaimCount(player.uuid) >= PureClaims.getMaxClaims(player.uuid) ->
+                    //     source.sendFeedback(config.add.noClaimSlotsAvailable?.templateText())
                     else -> {
                         PureClaims.addClaim(ClaimedChunk(player.uuid, player.world, chunkPos))
                         source.sendFeedback(config.add.success?.templateText())

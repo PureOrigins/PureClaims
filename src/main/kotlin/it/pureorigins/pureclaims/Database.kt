@@ -39,8 +39,8 @@ object PlayerClaimsTable : Table("player_claims") {
 }
 
 object PermissionsTable : Table("claim_permissions") {
-    val ownerUniqueId = uuid("owner_uuid")
-    val playerUniqueId = uuid("player_uuid")
+    val ownerUniqueId = uuid("owner_uuid") references PlayerTable.uniqueId
+    val playerUniqueId = uuid("player_uuid") references PlayerTable.uniqueId
     val canEdit = bool("can_edit")
     val canInteract = bool("can_interact")
     val canOpenChests = bool("can_open_chests")
@@ -62,6 +62,33 @@ object PermissionsTable : Table("claim_permissions") {
     fun remove(ownerId: UUID, targetId: UUID): Boolean = deleteWhere {
         (playerUniqueId eq targetId) and (ownerUniqueId eq ownerId)
     } > 0
+}
+
+object PlayerTable : Table("players") {
+    val uniqueId = uuid("uuid")
+    val maxClaims = integer("max_claims").default(0)
+    
+    override val primaryKey = PrimaryKey(uniqueId)
+    
+    fun getMaxClaims(uniqueId: UUID): Int = select { PlayerTable.uniqueId eq uniqueId }.map { it[maxClaims] }.singleOrNull() ?: 0
+    fun setMaxClaims(uniqueId: UUID, maxClaims: Int): Boolean {
+        insertIgnore {
+            it[PlayerTable.uniqueId] = uniqueId
+        }
+        return update({ PlayerTable.uniqueId eq uniqueId }) {
+            it[PlayerTable.maxClaims] = maxClaims
+        } > 0
+    }
+    fun incrementMaxClaims(uniqueId: UUID, claims: Int): Boolean {
+        insertIgnore {
+            it[PlayerTable.uniqueId] = uniqueId
+        }
+        return update({ PlayerTable.uniqueId eq uniqueId }) {
+            with(SqlExpressionBuilder) {
+                it[maxClaims] = maxClaims + claims
+            }
+        } > 0
+    }
 }
 
 private fun ResultRow.toClaimedChunk(server: MinecraftServer = PureClaims.server) = ClaimedChunk(

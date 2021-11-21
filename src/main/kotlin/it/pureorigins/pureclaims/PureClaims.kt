@@ -19,47 +19,55 @@ import java.util.*
 
 object PureClaims : ModInitializer {
     private lateinit var database: Database
-    internal var claimsCache: MutableMap<Pair<World, ChunkPos>, ClaimedChunk> = HashMap()
-    internal var permissionsCache: MutableMap<UUID, MutableMap<UUID, ClaimPermissions>> = HashMap()
-    internal lateinit var settings: Config.Settings
+    private lateinit var claims: Claims
+    private lateinit var permissions: Permissions
+    private lateinit var settings: Config.Settings
     internal lateinit var server: MinecraftServer
 
-    fun getClaimedChunkFromDB(world: ServerWorld, chunkPos: ChunkPos): ClaimedChunk? =
+    fun getClaimedChunkNotCached(world: ServerWorld, chunkPos: ChunkPos): ClaimedChunk? =
         transaction(database) { PlayerClaimsTable.getClaim(world, chunkPos) }
 
-    fun getPermissionsFromDB(uuid: UUID): Map<UUID, ClaimPermissions> =
+    fun getPermissionsNotCached(uuid: UUID): Map<UUID, ClaimPermissions> =
         transaction(database) { PermissionsTable.getPermissions(uuid) }
 
-    fun getClaimCount(playerUniqueId: UUID): Long =
-        transaction(database) { PlayerClaimsTable.getClaimCount(playerUniqueId) }
+    fun getClaimCount(playerUniqueId: UUID): Int =
+        transaction(database) { PlayerClaimsTable.getClaimCount(playerUniqueId) }.toInt()
+    
+    fun getMaxClaims(playerUniqueId: UUID): Int =
+        transaction(database) { PlayerTable.getMaxClaims(playerUniqueId) }
+    
+    fun setMaxClaims(playerUniqueId: UUID, maxClaims: Int): Boolean =
+        transaction(database) { PlayerTable.setMaxClaims(playerUniqueId, maxClaims) }
+    
+    fun incrementMaxClaims(playerUniqueId: UUID, maxClaims: Int): Boolean =
+        transaction(database) { PlayerTable.incrementMaxClaims(playerUniqueId, maxClaims) }
     
     fun getPermissions(player: ServerPlayerEntity, claim: ClaimedChunk): ClaimPermissions {
-        return permissionsCache[player.uuid]?.get(claim.owner)
-            ?: (if (claim.owner == player.uuid) ClaimPermissions.ALL else ClaimPermissions.NONE)
+        return permissions[player, claim]
     }
 
     fun isClaimed(world:World, chunkPos: ChunkPos): Boolean {
-        return world to chunkPos in claimsCache
+        return world to chunkPos in claims
     }
 
-    fun getClaim(world: World, chunkPos: ChunkPos):ClaimedChunk? {
-        return claimsCache[world to chunkPos]
+    fun getClaim(world: World, chunkPos: ChunkPos): ClaimedChunk? {
+        return claims[world, chunkPos]
     }
     
     fun addClaim(claim: ClaimedChunk) {
         if (transaction(database) { PlayerClaimsTable.add(claim) }) {
-            claimsCache[claim.world to claim.chunkPos] = claim
+            claims[claim.world, claim.chunkPos] = claim
         }
     }
 
     fun removeClaim(claim: ClaimedChunk) {
         if (transaction(database) { PlayerClaimsTable.remove(claim) }) {
-            claimsCache -= claim.world to claim.chunkPos
+            claims -= claim.world to claim.chunkPos
         }
     }
     
     fun checkPermissions(player: ServerPlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
-        val claim = claimsCache[player.world to chunk] ?: return true
+        val claim = claims[player.world, chunk] ?: return true
         val permissions = getPermissions(player, claim)
         return permissions.requiredPermissions().also {
             if (!it) {
@@ -78,17 +86,17 @@ object PureClaims : ModInitializer {
         ServerLifecycleEvents.SERVER_STARTING.register {
             server = it
             database = Database.connect(db.url, user = db.username, password = db.password)
-            transaction(database) { SchemaUtils.createMissingTablesAndColumns(PlayerClaimsTable, PermissionsTable) }
+            transaction(database) { SchemaUtils.createMissingTablesAndColumns(PlayerClaimsTable, PermissionsTable, PlayerTable) }
+            claims = Claims()
+            permissions = Permissions()
         }
         CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             dispatcher.register(ClaimCommands(commands).command)
         }
-        Events.registerCacheHandlers()
-        Events.registerEvents()
 
         //Test
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-            claimsCache[handler.player.world to ChunkPos(0, 0)] = ClaimedChunk(UUID.fromString("00000000-0000-0000-0000-000000000000"), server.overworld, ChunkPos(0,0))
+            claims[handler.player.world to ChunkPos(0, 0)] = ClaimedChunk(UUID.fromString("00000000-0000-0000-0000-000000000000"), server.overworld, ChunkPos(0,0))
         }
     }
 
