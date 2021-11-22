@@ -6,8 +6,8 @@ import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.ChunkPos
@@ -42,7 +42,7 @@ object PureClaims : ModInitializer {
     fun incrementMaxClaims(playerUniqueId: UUID, maxClaims: Int): Boolean =
         transaction(database) { PlayerTable.incrementMaxClaims(playerUniqueId, maxClaims) }
     
-    fun getPermissions(player: ServerPlayerEntity, claim: ClaimedChunk): ClaimPermissions {
+    fun getPermissions(player: PlayerEntity, claim: ClaimedChunk): ClaimPermissions {
         return permissions[player, claim]
     }
 
@@ -66,17 +66,15 @@ object PureClaims : ModInitializer {
         }
     }
     
-    fun checkPermissions(player: ServerPlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    fun checkPermissions(player: PlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
         val claim = claims[player.world, chunk] ?: return true
         val permissions = getPermissions(player, claim)
         return permissions.requiredPermissions().also {
-            if (!it) {
-                player.sendActionBar(settings.insufficientPermissions?.templateText())
-            }
+            if (!it) player.sendActionBar(settings.insufficientPermissions?.templateText())
         }
     }
     
-    fun checkPermissions(player: ServerPlayerEntity, block: BlockPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean =
+    fun checkPermissions(player: PlayerEntity, block: BlockPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean =
         checkPermissions(player, ChunkPos(block), requiredPermissions)
 
     override fun onInitialize() {

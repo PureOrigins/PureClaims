@@ -1,7 +1,7 @@
 package it.pureorigins.pureclaims
 
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.entity.player.PlayerEntity
 import java.util.*
 
 class Permissions(private val permissions: MutableMap<UUID, MutableMap<UUID, ClaimPermissions>> = HashMap()): MutableMap<UUID, MutableMap<UUID, ClaimPermissions>> by permissions {
@@ -17,7 +17,7 @@ class Permissions(private val permissions: MutableMap<UUID, MutableMap<UUID, Cla
         }
     }
     
-    operator fun get(player: ServerPlayerEntity, claim: ClaimedChunk): ClaimPermissions {
+    operator fun get(player: PlayerEntity, claim: ClaimedChunk): ClaimPermissions {
         return permissions[player.uuid]?.get(claim.owner)
             ?: (if (claim.owner == player.uuid) ClaimPermissions.ALL else ClaimPermissions.NONE)
     }

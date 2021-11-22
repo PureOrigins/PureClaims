@@ -24,19 +24,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerPlayerInteractionManager.class)
 public class ServerPlayerInteractionManagerMixin {
-  @Shadow protected ServerWorld world;
-  @Shadow @Final protected ServerPlayerEntity player;
-  
-  @Inject(method = "processBlockBreakingAction", at = @At("HEAD"), cancellable = true)
-  private void onProcessBlockBreakingAction(BlockPos pos, PlayerActionC2SPacket.Action action, Direction direction, int worldHeight, CallbackInfo callback) {
-    if (!PureClaims.INSTANCE.checkPermissions(player, pos, ClaimPermissions::getCanEdit)) {
-      player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, world.getBlockState(pos), action, false, "insufficient claim permissions"));
-      callback.cancel();
+    @Shadow protected ServerWorld world;
+    @Shadow @Final protected ServerPlayerEntity player;
+
+    @Inject(method = "processBlockBreakingAction", at = @At("HEAD"), cancellable = true)
+    private void onProcessBlockBreakingAction(BlockPos pos, PlayerActionC2SPacket.Action action, Direction direction, int worldHeight, CallbackInfo callback) {
+        if (!PureClaims.INSTANCE.checkPermissions(player, pos, ClaimPermissions::getCanEdit)) {
+            player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, world.getBlockState(pos), action, false, "insufficient claim permissions"));
+            callback.cancel();
+        }
     }
-  }
-  
-  @Inject(at = @At("HEAD"), method = "interactBlock", cancellable = true)
-  public void interactBlock(ServerPlayerEntity player, World world, ItemStack stack, Hand hand, BlockHitResult blockHitResult, CallbackInfoReturnable<ActionResult> info) {
-    // ...
-  }
+
+    @Inject(method = "interactBlock", at = @At("HEAD"), cancellable = true)
+    public void interactBlock(ServerPlayerEntity player, World world, ItemStack stack, Hand hand, BlockHitResult blockHitResult, CallbackInfoReturnable<ActionResult> info) {
+        // ...
+    }
 }
