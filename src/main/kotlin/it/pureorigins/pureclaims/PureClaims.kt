@@ -66,16 +66,38 @@ object PureClaims : ModInitializer {
         }
     }
     
-    fun checkPermissions(player: PlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    fun hasPermissions(player: PlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
         val claim = claims[player.world, chunk] ?: return true
         val permissions = getPermissions(player, claim)
-        return permissions.requiredPermissions().also {
-            if (!it) player.sendActionBar(settings.insufficientPermissions?.templateText())
+        return permissions.requiredPermissions()
+    }
+    
+    fun checkEditPermissions(player: PlayerEntity, chunk: ChunkPos): Boolean {
+        return hasPermissions(player, chunk, ClaimPermissions::canEdit).also {
+            if (!it) player.sendActionBar(settings.cannotEdit?.templateText())
         }
     }
     
-    fun checkPermissions(player: PlayerEntity, block: BlockPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean =
-        checkPermissions(player, ChunkPos(block), requiredPermissions)
+    fun checkEditPermissions(player: PlayerEntity, block: BlockPos): Boolean =
+        checkEditPermissions(player, ChunkPos(block))
+    
+    fun checkInteractPermissions(player: PlayerEntity, chunk: ChunkPos): Boolean {
+        return hasPermissions(player, chunk, ClaimPermissions::canInteract).also {
+            if (!it) player.sendActionBar(settings.cannotInteract?.templateText())
+        }
+    }
+    
+    fun checkInteractPermissions(player: PlayerEntity, block: BlockPos): Boolean =
+        checkInteractPermissions(player, ChunkPos(block))
+    
+    fun checkDamageMobPermissions(player: PlayerEntity, chunk: ChunkPos): Boolean {
+        return hasPermissions(player, chunk, ClaimPermissions::canDamageMobs).also {
+            if (!it) player.sendActionBar(settings.cannotDamageMobs?.templateText())
+        }
+    }
+    
+    fun checkDamageMobPermissions(player: PlayerEntity, block: BlockPos): Boolean =
+        checkDamageMobPermissions(player, ChunkPos(block))
 
     override fun onInitialize() {
         val (db, commands, settings) = json.readFileAs(configFile("pureclaims.json"), Config())
@@ -88,6 +110,7 @@ object PureClaims : ModInitializer {
             claims = Claims()
             permissions = Permissions()
         }
+        Events.registerEvents()
         CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             dispatcher.register(ClaimCommands(commands).command)
         }
@@ -114,7 +137,9 @@ object PureClaims : ModInitializer {
 
         @Serializable
         data class Settings(
-            val insufficientPermissions: String? = "{\"text\": \"You don't have permission to do that!\", \"color\": \"red\"}",
+            val cannotEdit: String? = "{\"text\": \"You don't have permission to edit!\", \"color\": \"red\"}",
+            val cannotInteract: String? = "{\"text\": \"You don't have permission to interact!\", \"color\": \"red\"}",
+            val cannotDamageMobs: String? = "{\"text\": \"You don't have permission to damage mobs!\", \"color\": \"red\"}",
             val maxClaims: Int = 10
         )
     }

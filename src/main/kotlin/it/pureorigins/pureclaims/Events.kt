@@ -1,30 +1,42 @@
 package it.pureorigins.pureclaims
 
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback
+import net.fabricmc.fabric.api.event.player.UseBlockCallback
+import net.minecraft.block.CakeBlock
+import net.minecraft.block.DoorBlock
+import net.minecraft.block.enums.DoubleBlockHalf
+import net.minecraft.item.TallBlockItem
+import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.util.ActionResult
+
 object Events {
     fun registerEvents() {
-        /*PlayerBlockBreakEvents.BEFORE.register { _, player, blockPos, _, _ ->
-            val pos = ChunkPos(blockPos)
-            return@register PureClaims.checkPermissions(player, pos, ClaimPermissions::canEdit)
-        }
-
         AttackEntityCallback.EVENT.register { player, _, _, entity, _ ->
-            val pos = ChunkPos(entity?.blockPos)
-            if (PureClaims.checkPermissions(player, pos, ClaimPermissions::canDamageMobs))
-                return@register ActionResult.FAIL
-            else return@register ActionResult.PASS
+            PureClaims.checkDamageMobPermissions(player, entity.blockPos).toActionResult()
         }
 
-
-        UseBlockCallback.EVENT.register { player, world, _, block ->
-            val pos = ChunkPos(block.blockPos)
-            val blockState = world.getBlockState(block.blockPos)
-            if (blockState.block == Blocks.CHEST || blockState.block == Blocks.TRAPPED_CHEST) {
-                if (PureClaims.checkPermissions(player, pos, ClaimPermissions::canOpenChests))
-                    return@register ActionResult.PASS
+        UseBlockCallback.EVENT.register { player, world, hand, hit ->
+            if (player !is ServerPlayerEntity) return@register ActionResult.PASS
+            if (PureClaims.checkInteractPermissions(player, hit.blockPos)) {
+                ActionResult.PASS
+            } else {
+                val blockState = world.getBlockState(hit.blockPos)
+                when (blockState.block) {
+                    is DoorBlock -> if (blockState[DoorBlock.HALF] == DoubleBlockHalf.LOWER) {
+                        player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.up()))
+                    } else {
+                        player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.down()))
+                    }
+                    is CakeBlock -> player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos))
+                }
+                when (player.getStackInHand(hand).item) {
+                    is TallBlockItem -> player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.offset(hit.side).up()))
+                }
+                ActionResult.FAIL
             }
-            if (PureClaims.checkPermissions(player, pos, ClaimPermissions::canInteract))
-                return@register ActionResult.PASS
-            return@register ActionResult.FAIL
-        }*/
+        }
     }
+    
+    private fun Boolean.toActionResult() = if (this) ActionResult.PASS else ActionResult.FAIL
 }
