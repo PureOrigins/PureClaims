@@ -24,10 +24,12 @@ public class ServerWorldMixin {
     var instance = (ServerWorld) (Object) this;
     var explosion = new Explosion(instance, entity, damageSource, behavior, x, y, z, power, createFire, destructionType);
     explosion.collectBlocksAndDamageEntities();
-
-    var causingPlayer = PureClaims.INSTANCE.inferPlayer(entity);
-    if (causingPlayer != null) {
-      explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.hasPermissions(causingPlayer, block, ClaimPermissions.EDIT));
+  
+    if (entity != null) {
+      var causingPlayer = PureClaims.INSTANCE.inferPlayer(entity);
+      if (causingPlayer != null) {
+        explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.hasPermissions(causingPlayer, block, ClaimPermissions.EDIT));
+      }
     }
 
     explosion.affectWorld(false);
