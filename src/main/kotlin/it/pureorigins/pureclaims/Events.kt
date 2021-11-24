@@ -11,32 +11,32 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.ActionResult
 
 object Events {
-    fun registerEvents() {
-        AttackEntityCallback.EVENT.register { player, _, _, entity, _ ->
-            PureClaims.checkDamageMobPermissions(player, entity.blockPos).toActionResult()
-        }
-
-        UseBlockCallback.EVENT.register { player, world, hand, hit ->
-            if (player !is ServerPlayerEntity) return@register ActionResult.PASS
-            if (PureClaims.checkInteractPermissions(player, hit.blockPos)) {
-                ActionResult.PASS
-            } else {
-                val blockState = world.getBlockState(hit.blockPos)
-                when (blockState.block) {
-                    is DoorBlock -> if (blockState[DoorBlock.HALF] == DoubleBlockHalf.LOWER) {
-                        player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.up()))
-                    } else {
-                        player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.down()))
-                    }
-                    is CakeBlock -> player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos))
-                }
-                when (player.getStackInHand(hand).item) {
-                    is TallBlockItem -> player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.offset(hit.side).up()))
-                }
-                ActionResult.FAIL
-            }
-        }
+  fun registerEvents() {
+    AttackEntityCallback.EVENT.register { player, _, _, entity, _ ->
+      PureClaims.checkDamageMobPermissions(player, entity.blockPos).toActionResult()
     }
-    
-    private fun Boolean.toActionResult() = if (this) ActionResult.PASS else ActionResult.FAIL
+
+    UseBlockCallback.EVENT.register { player, world, hand, hit ->
+      if (player !is ServerPlayerEntity) return@register ActionResult.PASS
+      if (PureClaims.checkInteractPermissions(player, hit.blockPos)) {
+        ActionResult.PASS
+      } else {
+        val blockState = world.getBlockState(hit.blockPos)
+        when (blockState.block) {
+          is DoorBlock -> if (blockState[DoorBlock.HALF] == DoubleBlockHalf.LOWER) {
+            player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.up()))
+          } else {
+            player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.down()))
+          }
+          is CakeBlock -> player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos))
+        }
+        when (player.getStackInHand(hand).item) {
+          is TallBlockItem -> player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.offset(hit.side).up()))
+        }
+        ActionResult.FAIL
+      }
+    }
+  }
+
+  private fun Boolean.toActionResult() = if (this) ActionResult.PASS else ActionResult.FAIL
 }

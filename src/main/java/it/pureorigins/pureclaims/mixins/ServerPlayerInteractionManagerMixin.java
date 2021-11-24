@@ -17,14 +17,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerPlayerInteractionManager.class)
 public class ServerPlayerInteractionManagerMixin {
-    @Shadow protected ServerWorld world;
-    @Shadow @Final protected ServerPlayerEntity player;
+  @Shadow protected ServerWorld world;
+  @Shadow @Final protected ServerPlayerEntity player;
 
-    @Inject(method = "processBlockBreakingAction", at = @At("HEAD"), cancellable = true)
-    private void onProcessBlockBreakingAction(BlockPos pos, PlayerActionC2SPacket.Action action, Direction direction, int worldHeight, CallbackInfo callback) {
-        if (!PureClaims.INSTANCE.checkEditPermissions(player, pos)) {
-            player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, world.getBlockState(pos), action, false, "insufficient claim permissions"));
-            callback.cancel();
-        }
+  @Inject(method = "processBlockBreakingAction", at = @At("HEAD"), cancellable = true)
+  private void onProcessBlockBreakingAction(BlockPos pos, PlayerActionC2SPacket.Action action, Direction direction, int worldHeight, CallbackInfo callback) {
+    if (!PureClaims.INSTANCE.checkEditPermissions(player, pos)) {
+      player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, world.getBlockState(pos), action, false, "insufficient claim permissions"));
+      callback.cancel();
     }
+  }
 }

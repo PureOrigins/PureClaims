@@ -5,7 +5,7 @@ import net.minecraft.world.World
 import java.util.*
 
 data class ClaimedChunk(
-    val owner: UUID,
-    val world: World,
-    val chunkPos: ChunkPos
+  val owner: UUID,
+  val world: World,
+  val chunkPos: ChunkPos
 )
