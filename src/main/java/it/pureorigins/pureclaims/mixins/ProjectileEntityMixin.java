@@ -1,11 +1,11 @@
 package it.pureorigins.pureclaims.mixins;
 
+import it.pureorigins.pureclaims.ClaimPermissions;
 import it.pureorigins.pureclaims.PureClaims;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,11 +20,15 @@ public class ProjectileEntityMixin {
   
   @Inject(method = "onCollision", at = @At("HEAD"), cancellable = true)
   private void onCollision(HitResult hit, CallbackInfo callback) {
-    if (owner instanceof ServerPlayerEntity player) {
-      if (hit.getType() == HitResult.Type.ENTITY) {
-        var entity = ((EntityHitResult) hit).getEntity();
-        if (entity.getType() != EntityType.PLAYER && entity instanceof LivingEntity) {
-          if (!PureClaims.INSTANCE.checkDamageMobPermissions(player, entity.getChunkPos())) {
+    if (hit.getType() == HitResult.Type.ENTITY) {
+      var entity = ((EntityHitResult) hit).getEntity();
+      if (entity.getType() != EntityType.PLAYER) {
+        if (entity instanceof LivingEntity) {
+          if (!PureClaims.INSTANCE.checkIndirectPermissions(owner, entity.getBlockPos(), ClaimPermissions.DAMAGE_MOBS)) {
+            callback.cancel();
+          }
+        } else {
+          if (!PureClaims.INSTANCE.checkIndirectPermissions(owner, entity.getBlockPos(), ClaimPermissions.EDIT)) {
             callback.cancel();
           }
         }

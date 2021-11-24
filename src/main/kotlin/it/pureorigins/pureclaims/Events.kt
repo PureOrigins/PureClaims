@@ -13,12 +13,12 @@ import net.minecraft.util.ActionResult
 object Events {
   fun registerEvents() {
     AttackEntityCallback.EVENT.register { player, _, _, entity, _ ->
-      PureClaims.checkDamageMobPermissions(player, entity.blockPos).toActionResult()
+      PureClaims.checkPermissions(player, entity.blockPos, ClaimPermissions.DAMAGE_MOBS).toActionResult()
     }
 
     UseBlockCallback.EVENT.register { player, world, hand, hit ->
       if (player !is ServerPlayerEntity) return@register ActionResult.PASS
-      if (PureClaims.checkInteractPermissions(player, hit.blockPos)) {
+      if (PureClaims.checkPermissions(player, hit.blockPos, ClaimPermissions.INTERACT)) {
         ActionResult.PASS
       } else {
         val blockState = world.getBlockState(hit.blockPos)

@@ -1,5 +1,6 @@
 package it.pureorigins.pureclaims.mixins;
 
+import it.pureorigins.pureclaims.ClaimPermissions;
 import it.pureorigins.pureclaims.PureClaims;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
@@ -22,7 +23,7 @@ public class FarmlandBlockMixin extends Block {
   
   @Inject(method = "onLandedUpon", at = @At("HEAD"), cancellable = true)
   private void onLandedUpon(World world, BlockState state, BlockPos pos, Entity entity, float fallDistance, CallbackInfo callback) {
-    if (entity instanceof ServerPlayerEntity player && !PureClaims.INSTANCE.checkInteractPermissions(player, pos)) {
+    if (entity instanceof ServerPlayerEntity player && !PureClaims.INSTANCE.checkPermissions(player, pos, ClaimPermissions.EDIT)) {
       super.onLandedUpon(world, state, pos, entity, fallDistance);
       callback.cancel();
     }

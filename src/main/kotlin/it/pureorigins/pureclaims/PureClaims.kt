@@ -1,13 +1,20 @@
 package it.pureorigins.pureclaims
 
 import it.pureorigins.framework.configuration.*
+import it.pureorigins.pureclaims.PureClaims.inferPlayer
 import kotlinx.serialization.Serializable
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.minecraft.entity.Entity
+import net.minecraft.entity.ItemEntity
+import net.minecraft.entity.TntEntity
+import net.minecraft.entity.mob.MobEntity
 import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.entity.projectile.ProjectileEntity
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.ChunkPos
@@ -65,39 +72,53 @@ object PureClaims : ModInitializer {
       claims -= claim.world to claim.chunkPos
     }
   }
-
+  
   fun hasPermissions(player: PlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
     val claim = claims[player.world, chunk] ?: return true
     val permissions = getPermissions(player, claim)
     return permissions.requiredPermissions()
   }
-
-  fun checkEditPermissions(player: PlayerEntity, chunk: ChunkPos): Boolean {
-    return hasPermissions(player, chunk, ClaimPermissions::canEdit).also {
-      if (!it) player.sendActionBar(settings.cannotEdit?.templateText())
+  
+  fun hasPermissions(player: PlayerEntity, block: BlockPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    return hasPermissions(player, ChunkPos(block), requiredPermissions)
+  }
+  
+  fun checkPermissions(player: PlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    return hasPermissions(player, chunk, requiredPermissions).also {
+      if (!it) {
+        when (requiredPermissions) {
+          ClaimPermissions.EDIT -> player.sendActionBar(settings.cannotEdit?.templateText())
+          ClaimPermissions.INTERACT -> player.sendActionBar(settings.cannotInteract?.templateText())
+          ClaimPermissions.DAMAGE_MOBS -> player.sendActionBar(settings.cannotDamageMobs?.templateText())
+        }
+      }
     }
   }
-
-  fun checkEditPermissions(player: PlayerEntity, block: BlockPos): Boolean =
-    checkEditPermissions(player, ChunkPos(block))
-
-  fun checkInteractPermissions(player: PlayerEntity, chunk: ChunkPos): Boolean {
-    return hasPermissions(player, chunk, ClaimPermissions::canInteract).also {
-      if (!it) player.sendActionBar(settings.cannotInteract?.templateText())
+  
+  fun checkPermissions(player: PlayerEntity, block: BlockPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    return checkPermissions(player, ChunkPos(block), requiredPermissions)
+  }
+  
+  fun Entity.inferPlayer(): ServerPlayerEntity? {
+    return when (this) {
+      is ServerPlayerEntity -> this
+      is MobEntity -> target?.inferPlayer()
+      is ProjectileEntity -> owner?.inferPlayer()
+      is ItemEntity -> if (thrower != null) this@PureClaims.server.playerManager.getPlayer(thrower) else null
+      is TntEntity -> causingEntity?.inferPlayer()
+      else -> null
     }
   }
-
-  fun checkInteractPermissions(player: PlayerEntity, block: BlockPos): Boolean =
-    checkInteractPermissions(player, ChunkPos(block))
-
-  fun checkDamageMobPermissions(player: PlayerEntity, chunk: ChunkPos): Boolean {
-    return hasPermissions(player, chunk, ClaimPermissions::canDamageMobs).also {
-      if (!it) player.sendActionBar(settings.cannotDamageMobs?.templateText())
-    }
+  
+  @JvmOverloads
+  fun hasIndirectPermissions(entity: Entity, block: BlockPos, default: Boolean = false, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    return hasPermissions(entity.inferPlayer() ?: return default, block, requiredPermissions)
   }
-
-  fun checkDamageMobPermissions(player: PlayerEntity, block: BlockPos): Boolean =
-    checkDamageMobPermissions(player, ChunkPos(block))
+  
+  @JvmOverloads
+  fun checkIndirectPermissions(entity: Entity, block: BlockPos, default: Boolean = false, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    return if (entity is PlayerEntity) checkPermissions(entity, block, requiredPermissions) else hasIndirectPermissions(entity, block, default, requiredPermissions)
+  }
 
   override fun onInitialize() {
     val (db, commands, settings) = json.readFileAs(configFile("pureclaims.json"), Config())

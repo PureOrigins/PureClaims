@@ -3,30 +3,22 @@ package it.pureorigins.pureclaims
 data class ClaimPermissions(
   val canEdit: Boolean,
   val canInteract: Boolean,
-  val canOpenChests: Boolean,
   val canDamageMobs: Boolean
 ) {
   init {
-    if (canEdit) check(canOpenChests && canInteract)
-    if (canInteract) check(canOpenChests)
+    if (canEdit) check(canInteract)
   }
 
   fun withCanEdit(canEdit: Boolean) = copy(
     canEdit = canEdit,
     canInteract = canEdit,
-    canOpenChests = canEdit
   )
 
   fun withCanInteract(canInteract: Boolean) = if (canInteract) copy(
     canInteract = canInteract,
-    canOpenChests = canInteract
   ) else copy(
     canEdit = canInteract,
     canInteract = canInteract
-  )
-
-  fun withCanOpenChests(canOpenChests: Boolean) = copy(
-    canOpenChests = canOpenChests
   )
 
   fun withCanDamageMobs(canDamageMobs: Boolean) = copy(
@@ -37,15 +29,17 @@ data class ClaimPermissions(
     val ALL = ClaimPermissions(
       canEdit = true,
       canInteract = true,
-      canOpenChests = true,
       canDamageMobs = true
     )
 
     val NONE = ClaimPermissions(
       canEdit = false,
       canInteract = false,
-      canOpenChests = false,
       canDamageMobs = false
     )
+  
+    @JvmField val EDIT = ClaimPermissions::canEdit
+    @JvmField val INTERACT = ClaimPermissions::canInteract
+    @JvmField val DAMAGE_MOBS = ClaimPermissions::canDamageMobs
   }
 }

@@ -43,7 +43,6 @@ object PermissionsTable : Table("claim_permissions") {
   val playerUniqueId = uuid("player_uuid") references PlayerTable.uniqueId
   val canEdit = bool("can_edit")
   val canInteract = bool("can_interact")
-  val canOpenChests = bool("can_open_chests")
   val canDamageMobs = bool("can_damage_mobs")
   override val primaryKey = PrimaryKey(ownerUniqueId, playerUniqueId)
 
@@ -55,7 +54,6 @@ object PermissionsTable : Table("claim_permissions") {
     it[ownerUniqueId] = ownerId
     it[canEdit] = permissions.canEdit
     it[canInteract] = permissions.canInteract
-    it[canOpenChests] = permissions.canOpenChests
     it[canDamageMobs] = permissions.canDamageMobs
   }.insertedCount > 0
 
@@ -100,6 +98,5 @@ private fun ResultRow.toClaimedChunk(server: MinecraftServer = PureClaims.server
 private fun ResultRow.toClaimPermission() = get(PermissionsTable.ownerUniqueId) to ClaimPermissions(
   get(PermissionsTable.canEdit),
   get(PermissionsTable.canInteract),
-  get(PermissionsTable.canOpenChests),
   get(PermissionsTable.canDamageMobs)
 )
