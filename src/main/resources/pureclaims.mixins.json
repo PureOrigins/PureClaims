@@ -7,8 +7,10 @@
     "BlockItemMixin",
     "FarmlandBlockMixin",
     "PressurePlateBlockMixin",
+    "ProjectileEntityMixin",
+    "ServerPlayerInteractionManagerMixin",
     "ServerWorldMixin",
-    "ServerPlayerInteractionManagerMixin"
+    "WeightedPressurePlateBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1

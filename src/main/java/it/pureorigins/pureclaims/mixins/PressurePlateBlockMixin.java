@@ -5,6 +5,7 @@ import net.minecraft.block.AbstractPressurePlateBlock;
 import net.minecraft.block.PressurePlateBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -12,8 +13,6 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-
-import java.util.List;
 
 @Mixin(PressurePlateBlock.class)
 public abstract class PressurePlateBlockMixin extends AbstractPressurePlateBlock {
@@ -30,23 +29,21 @@ public abstract class PressurePlateBlockMixin extends AbstractPressurePlateBlock
   @Overwrite
   public int getRedstoneOutput(World world, BlockPos pos) {
     var box = AbstractPressurePlateBlock.BOX.offset(pos);
-    List<? extends Entity> entities;
-    switch(this.type) {
-      case EVERYTHING:
-        entities = world.getOtherEntities(null, box);
-        break;
-      case MOBS:
-        entities = world.getNonSpectatingEntities(LivingEntity.class, box);
-        break;
-      default:
-        return 0;
-    }
+    var entities = switch (type) {
+      case EVERYTHING -> world.getOtherEntities(null, box, EntityPredicates.EXCEPT_SPECTATOR.and(e -> accept(e, pos)));
+      case MOBS -> world.getEntitiesByClass(LivingEntity.class, box, EntityPredicates.EXCEPT_SPECTATOR.and(e -> accept(e, pos)));
+    };
   
     for (var entity : entities) {
-      if (!entity.canAvoidTraps() && (!(entity instanceof ServerPlayerEntity) || PureClaims.INSTANCE.checkInteractPermissions((ServerPlayerEntity) entity, pos))) {
+      if (!entity.canAvoidTraps() && accept(entity, pos)) {
         return 15;
       }
     }
     return 0;
+  }
+  
+  private boolean accept(Entity entity, BlockPos pos) {
+    if (entity instanceof ServerPlayerEntity player) return PureClaims.INSTANCE.checkInteractPermissions(player, pos);
+    return true;
   }
 }
