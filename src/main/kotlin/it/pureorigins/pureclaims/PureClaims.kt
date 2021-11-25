@@ -13,7 +13,6 @@ import net.minecraft.entity.mob.MobEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.entity.projectile.ProjectileEntity
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.ChunkPos
@@ -106,9 +105,9 @@ object PureClaims : ModInitializer {
     return checkPermissions(player, ChunkPos(block), requiredPermissions)
   }
   
-  fun Entity.inferPlayer(): ServerPlayerEntity? {
+  fun Entity.inferPlayer(): PlayerEntity? {
     return when (this) {
-      is ServerPlayerEntity -> this
+      is PlayerEntity -> this
       is MobEntity -> target?.inferPlayer()
       is ProjectileEntity -> owner?.inferPlayer()
       is ItemEntity -> if (thrower != null) this@PureClaims.server.playerManager.getPlayer(thrower) else null

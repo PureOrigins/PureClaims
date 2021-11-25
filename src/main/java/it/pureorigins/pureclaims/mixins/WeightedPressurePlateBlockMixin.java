@@ -39,7 +39,6 @@ public abstract class WeightedPressurePlateBlockMixin extends AbstractPressurePl
   }
   
   private boolean accept(Entity entity, BlockPos pos) {
-    if (entity instanceof ServerPlayerEntity player) return PureClaims.INSTANCE.checkPermissions(player, pos, ClaimPermissions.INTERACT);
-    return true;
+    return PureClaims.INSTANCE.checkIndirectPermissions(entity, pos, ClaimPermissions.INTERACT);
   }
 }
