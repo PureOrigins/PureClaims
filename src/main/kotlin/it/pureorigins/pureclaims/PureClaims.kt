@@ -1,7 +1,6 @@
 package it.pureorigins.pureclaims
 
 import it.pureorigins.framework.configuration.*
-import it.pureorigins.pureclaims.PureClaims.inferPlayer
 import kotlinx.serialization.Serializable
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
@@ -55,6 +54,10 @@ object PureClaims : ModInitializer {
 
   fun isClaimed(world:World, chunkPos: ChunkPos): Boolean {
     return world to chunkPos in claims
+  }
+
+  fun isClaimed(world:World, blockPos: BlockPos): Boolean {
+    return isClaimed(world, ChunkPos(blockPos))
   }
 
   fun getClaim(world: World, chunkPos: ChunkPos): ClaimedChunk? {

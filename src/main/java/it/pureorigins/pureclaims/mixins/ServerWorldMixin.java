@@ -30,7 +30,7 @@ public class ServerWorldMixin {
       if (causingPlayer != null) {
         explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.hasPermissions(causingPlayer, block, ClaimPermissions.EDIT));
       }
-    }
+    } else explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.isClaimed(instance, block));
 
     explosion.affectWorld(false);
     if (destructionType == Explosion.DestructionType.NONE) {
@@ -44,6 +44,5 @@ public class ServerWorldMixin {
     }
 
     return explosion;
-
   }
 }
