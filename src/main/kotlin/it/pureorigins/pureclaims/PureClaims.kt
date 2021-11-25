@@ -21,31 +21,41 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 object PureClaims : ModInitializer {
   private lateinit var database: Database
   private lateinit var claims: Claims
   private lateinit var permissions: Permissions
   private lateinit var settings: Config.Settings
+  private val executor = Executors.newCachedThreadPool()
   internal lateinit var server: MinecraftServer
 
-  fun getClaimedChunkNotCached(world: ServerWorld, chunkPos: ChunkPos): ClaimedChunk? =
+  fun getClaimedChunkNotCached(world: ServerWorld, chunkPos: ChunkPos): Future<ClaimedChunk?> = executor.submit(Callable {
     transaction(database) { PlayerClaimsTable.getClaim(world, chunkPos) }
+  })
 
-  fun getPermissionsNotCached(uuid: UUID): Map<UUID, ClaimPermissions> =
+  fun getPermissionsNotCached(uuid: UUID): Future<Map<UUID, ClaimPermissions>> = executor.submit(Callable {
     transaction(database) { PermissionsTable.getPermissions(uuid) }
+  })
 
-  fun getClaimCount(playerUniqueId: UUID): Int =
+  fun getClaimCount(playerUniqueId: UUID): Future<Int> = executor.submit(Callable {
     transaction(database) { PlayerClaimsTable.getClaimCount(playerUniqueId) }.toInt()
+  })
 
-  fun getMaxClaims(playerUniqueId: UUID): Int =
+  fun getMaxClaims(playerUniqueId: UUID): Future<Int> = executor.submit(Callable {
     transaction(database) { PlayerTable.getMaxClaims(playerUniqueId) }
+  })
 
-  fun setMaxClaims(playerUniqueId: UUID, maxClaims: Int): Boolean =
+  fun setMaxClaims(playerUniqueId: UUID, maxClaims: Int): Future<Boolean> = executor.submit(Callable {
     transaction(database) { PlayerTable.setMaxClaims(playerUniqueId, maxClaims) }
+  })
 
-  fun incrementMaxClaims(playerUniqueId: UUID, maxClaims: Int): Boolean =
+  fun incrementMaxClaims(playerUniqueId: UUID, maxClaims: Int): Future<Boolean> = executor.submit(Callable {
     transaction(database) { PlayerTable.incrementMaxClaims(playerUniqueId, maxClaims) }
+  })
 
   fun getPermissions(player: PlayerEntity, claim: ClaimedChunk): ClaimPermissions {
     return permissions[player, claim]
@@ -66,18 +76,20 @@ object PureClaims : ModInitializer {
   fun getClaim(world: World, block: BlockPos): ClaimedChunk? {
     return claims[world, ChunkPos(block)]
   }
-
-  fun addClaim(claim: ClaimedChunk) {
+  
+  @Suppress("UNCHECKED_CAST")
+  fun addClaim(claim: ClaimedChunk): Future<Nothing?> = executor.submit {
     if (transaction(database) { PlayerClaimsTable.add(claim) }) {
       claims[claim.world, claim.chunkPos] = claim
     }
-  }
+  } as Future<Nothing?>
 
-  fun removeClaim(claim: ClaimedChunk) {
+  @Suppress("UNCHECKED_CAST")
+  fun removeClaim(claim: ClaimedChunk): Future<Nothing?> = executor.submit {
     if (transaction(database) { PlayerClaimsTable.remove(claim) }) {
       claims -= claim.world to claim.chunkPos
     }
-  }
+  } as Future<Nothing?>
   
   fun hasPermissions(player: PlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
     val claim = claims[player.world, chunk] ?: return true
@@ -137,6 +149,9 @@ object PureClaims : ModInitializer {
       claims = Claims()
       permissions = Permissions()
     }
+    ServerLifecycleEvents.SERVER_STOPPED.register {
+      executor.shutdownNow()
+    }
     Events.registerEvents()
     CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
       dispatcher.register(ClaimCommands(commands).command)
@@ -144,7 +159,7 @@ object PureClaims : ModInitializer {
 
     //Test
     ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-      claims[handler.player.world to ChunkPos(0, 0)] = ClaimedChunk(UUID.fromString("00000000-0000-0000-0000-000000000000"), server.overworld, ChunkPos(0,0))
+      claims[handler.player.world, ChunkPos(0, 0)] = ClaimedChunk(UUID.fromString("00000000-0000-0000-0000-000000000000"), server.overworld, ChunkPos(0,0))
     }
   }
 
