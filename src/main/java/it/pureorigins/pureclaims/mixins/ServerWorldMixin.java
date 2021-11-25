@@ -8,6 +8,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.explosion.Explosion;
 import net.minecraft.world.explosion.ExplosionBehavior;
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,22 +37,7 @@ public class ServerWorldMixin {
     if (causingPlayer != null) {
       ServerPlayerEntity finalCausingPlayer = causingPlayer;
       explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.checkEditPermissions(finalCausingPlayer, block));
-    }
-
-    /*if (entity instanceof MobEntity mob) { //Creeper explosions
-      if (mob.getTarget() instanceof ServerPlayerEntity player)
-        explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.checkEditPermissions(player, block));
-    } else if (entity instanceof ExplosiveProjectileEntity projectile) { //Fireball and wither explosions
-      if (projectile.getOwner() instanceof ServerPlayerEntity player) {
-        explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.checkEditPermissions(player, block));
-      } else if (projectile.getOwner() instanceof MobEntity thrower) {
-        if (thrower.getTarget() instanceof ServerPlayerEntity target)
-          explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.checkEditPermissions(target, block));
-      }
-    } else if (entity instanceof TntEntity tnt) { //TNT explosions
-      if (tnt.getCausingEntity() instanceof ServerPlayerEntity player)
-        explosion.getAffectedBlocks().removeIf(block -> !PureClaims.INSTANCE.checkEditPermissions(player, block));
-    }*/
+    } else explosion.getAffectedBlocks().removeIf(blockPos -> PureClaims.INSTANCE.isClaimed(instance, new ChunkPos(blockPos)));
 
     explosion.affectWorld(false);
     if (destructionType == Explosion.DestructionType.NONE) {
@@ -65,6 +51,5 @@ public class ServerWorldMixin {
     }
 
     return explosion;
-
   }
 }

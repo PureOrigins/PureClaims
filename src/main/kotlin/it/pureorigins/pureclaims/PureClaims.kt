@@ -54,6 +54,10 @@ object PureClaims : ModInitializer {
     return claims[world, chunkPos]
   }
 
+  fun getClaim(world: World, block: BlockPos): ClaimedChunk? {
+    return claims[world, ChunkPos(block)]
+  }
+
   fun addClaim(claim: ClaimedChunk) {
     if (transaction(database) { PlayerClaimsTable.add(claim) }) {
       claims[claim.world, claim.chunkPos] = claim

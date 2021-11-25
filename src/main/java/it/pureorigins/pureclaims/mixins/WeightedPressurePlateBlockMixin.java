@@ -27,7 +27,7 @@ public abstract class WeightedPressurePlateBlockMixin extends AbstractPressurePl
    * @reason Too hard to inject
    */
   @Overwrite
-  protected int getRedstoneOutput(World world, BlockPos pos) {
+  public int getRedstoneOutput(World world, BlockPos pos) {
     var i = world.getEntitiesByClass(Entity.class, BOX.offset(pos), EntityPredicates.EXCEPT_SPECTATOR.and(e -> accept(e, pos))).size();
     if (i > 0) {
       float f = (float) Math.min(weight, i) / (float) weight;

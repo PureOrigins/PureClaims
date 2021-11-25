@@ -6,6 +6,7 @@
   "mixins": [
     "BlockItemMixin",
     "FarmlandBlockMixin",
+    "FireBlockMixin",
     "PressurePlateBlockMixin",
     "ProjectileEntityMixin",
     "ServerPlayerInteractionManagerMixin",
