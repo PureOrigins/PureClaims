@@ -31,7 +31,12 @@ object Events {
           is CakeBlock -> player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos))
         }
         when (player.getStackInHand(hand).item) {
-          is TallBlockItem -> player.networkHandler.sendPacket(BlockUpdateS2CPacket(world, hit.blockPos.offset(hit.side).up()))
+          is TallBlockItem -> player.networkHandler.sendPacket(
+            BlockUpdateS2CPacket(
+              world,
+              hit.blockPos.offset(hit.side).up()
+            )
+          )
         }
         ActionResult.FAIL
       }

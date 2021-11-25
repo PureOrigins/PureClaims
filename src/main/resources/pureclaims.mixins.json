@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "BlockItemMixin",
+    "BucketItemMixin",
     "FarmlandBlockMixin",
     "FireBlockMixin",
     "PressurePlateBlockMixin",

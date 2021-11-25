@@ -27,6 +27,7 @@ public class FireBlockMixin {
       if (originPos == null) LogManager.getLogger().info("porco troio");
       else if (!new ChunkPos(originPos).equals(new ChunkPos(pos))) {
         //TODO check if the fire is not spreading to the same chunk
+        LogManager.getLogger().info("Fire trying to overcome chunk");
       }
       ci.cancel();
     }
