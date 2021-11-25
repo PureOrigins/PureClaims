@@ -1,5 +1,6 @@
 package it.pureorigins.pureclaims.mixins;
 
+import it.pureorigins.pureclaims.ClaimPermissions;
 import it.pureorigins.pureclaims.PureClaims;
 import net.minecraft.block.AbstractPressurePlateBlock;
 import net.minecraft.block.WeightedPressurePlateBlock;
@@ -38,7 +39,7 @@ public abstract class WeightedPressurePlateBlockMixin extends AbstractPressurePl
   }
   
   private boolean accept(Entity entity, BlockPos pos) {
-    if (entity instanceof ServerPlayerEntity player) return PureClaims.INSTANCE.checkInteractPermissions(player, pos);
+    if (entity instanceof ServerPlayerEntity player) return PureClaims.INSTANCE.checkPermissions(player, pos, ClaimPermissions.INTERACT);
     return true;
   }
 }

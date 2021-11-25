@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class BlockItemMixin {
   @Inject(method = "place(Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/util/ActionResult;", at = @At("HEAD"), cancellable = true)
   private void place(ItemPlacementContext context, CallbackInfoReturnable<ActionResult> callback) {
-    if (context.getPlayer() instanceof ServerPlayerEntity player && !PureClaims.INSTANCE.checkEditPermissions(context.getPlayer(), context.getBlockPos())) {
+    if (context.getPlayer() instanceof ServerPlayerEntity player && !PureClaims.INSTANCE.checkPermissions(context.getPlayer(), context.getBlockPos(), ClaimPermissions.EDIT)) {
       if (context.getStack().getItem() instanceof TallBlockItem) {
         player.networkHandler.sendPacket(new BlockUpdateS2CPacket(context.getWorld(), context.getBlockPos().up()));
       }

@@ -1,5 +1,6 @@
 package it.pureorigins.pureclaims.mixins;
 
+import it.pureorigins.pureclaims.ClaimPermissions;
 import it.pureorigins.pureclaims.PureClaims;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerActionResponseS2CPacket;
@@ -22,7 +23,7 @@ public class ServerPlayerInteractionManagerMixin {
 
   @Inject(method = "processBlockBreakingAction", at = @At("HEAD"), cancellable = true)
   private void onProcessBlockBreakingAction(BlockPos pos, PlayerActionC2SPacket.Action action, Direction direction, int worldHeight, CallbackInfo callback) {
-    if (!PureClaims.INSTANCE.checkEditPermissions(player, pos)) {
+    if (!PureClaims.INSTANCE.checkPermissions(player, pos, ClaimPermissions.EDIT)) {
       player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, world.getBlockState(pos), action, false, "insufficient claim permissions"));
       callback.cancel();
     }
