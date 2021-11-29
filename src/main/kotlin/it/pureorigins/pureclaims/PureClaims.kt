@@ -1,6 +1,7 @@
 package it.pureorigins.pureclaims
 
 import it.pureorigins.framework.configuration.*
+import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
@@ -19,43 +20,44 @@ import net.minecraft.util.math.ChunkPos
 import net.minecraft.world.World
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
-import java.util.concurrent.Callable
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 
 object PureClaims : ModInitializer {
   private lateinit var database: Database
   private lateinit var claims: Claims
   private lateinit var permissions: Permissions
   private lateinit var settings: Config.Settings
-  private val executor = Executors.newCachedThreadPool()
+  private val scope = CoroutineScope(SupervisorJob() + CoroutineName("PureClaims"))
   internal lateinit var server: MinecraftServer
+  
+  private fun <R> asyncTransaction(statement: Transaction.() -> R) = scope.async(Dispatchers.IO) { transaction(database, statement) }
+  private fun launchTransaction(statement: Transaction.() -> Unit) = scope.launch(Dispatchers.IO) { transaction(database, statement) }
 
-  fun getClaimedChunkNotCached(world: ServerWorld, chunkPos: ChunkPos): Future<ClaimedChunk?> = executor.submit(Callable {
-    transaction(database) { PlayerClaimsTable.getClaim(world, chunkPos) }
-  })
+  fun getClaimedChunkNotCached(world: ServerWorld, chunkPos: ChunkPos): Deferred<ClaimedChunk?> = asyncTransaction {
+    PlayerClaimsTable.getClaim(world, chunkPos)
+  }
 
-  fun getPermissionsNotCached(uuid: UUID): Future<Map<UUID, ClaimPermissions>> = executor.submit(Callable {
+  fun getPermissionsNotCached(uuid: UUID): Deferred<Map<UUID, ClaimPermissions>> = asyncTransaction {
     transaction(database) { PermissionsTable.getPermissions(uuid) }
-  })
+  }
 
-  fun getClaimCount(playerUniqueId: UUID): Future<Int> = executor.submit(Callable {
+  fun getClaimCount(playerUniqueId: UUID): Deferred<Int> = asyncTransaction {
     transaction(database) { PlayerClaimsTable.getClaimCount(playerUniqueId) }.toInt()
-  })
+  }
 
-  fun getMaxClaims(playerUniqueId: UUID): Future<Int> = executor.submit(Callable {
+  fun getMaxClaims(playerUniqueId: UUID): Deferred<Int> = asyncTransaction {
     transaction(database) { PlayerTable.getMaxClaims(playerUniqueId) }
-  })
+  }
 
-  fun setMaxClaims(playerUniqueId: UUID, maxClaims: Int): Future<Boolean> = executor.submit(Callable {
+  fun setMaxClaims(playerUniqueId: UUID, maxClaims: Int): Deferred<Boolean> = asyncTransaction {
     transaction(database) { PlayerTable.setMaxClaims(playerUniqueId, maxClaims) }
-  })
+  }
 
-  fun incrementMaxClaims(playerUniqueId: UUID, maxClaims: Int): Future<Boolean> = executor.submit(Callable {
+  fun incrementMaxClaims(playerUniqueId: UUID, maxClaims: Int): Deferred<Boolean> = asyncTransaction {
     transaction(database) { PlayerTable.incrementMaxClaims(playerUniqueId, maxClaims) }
-  })
+  }
 
   fun getPermissions(player: PlayerEntity, claim: ClaimedChunk): ClaimPermissions {
     return permissions[player, claim]
@@ -78,18 +80,18 @@ object PureClaims : ModInitializer {
   }
   
   @Suppress("UNCHECKED_CAST")
-  fun addClaim(claim: ClaimedChunk): Future<Nothing?> = executor.submit {
-    if (transaction(database) { PlayerClaimsTable.add(claim) }) {
+  fun addClaim(claim: ClaimedChunk): Job = launchTransaction {
+    if (PlayerClaimsTable.add(claim)) {
       claims[claim.world, claim.chunkPos] = claim
     }
-  } as Future<Nothing?>
+  }
 
   @Suppress("UNCHECKED_CAST")
-  fun removeClaim(claim: ClaimedChunk): Future<Nothing?> = executor.submit {
-    if (transaction(database) { PlayerClaimsTable.remove(claim) }) {
+  fun removeClaim(claim: ClaimedChunk): Job = launchTransaction {
+    if (PlayerClaimsTable.remove(claim)) {
       claims -= claim.world to claim.chunkPos
     }
-  } as Future<Nothing?>
+  }
   
   fun hasPermissions(player: PlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
     val claim = claims[player.world, chunk] ?: return true
@@ -137,6 +139,18 @@ object PureClaims : ModInitializer {
   fun checkIndirectPermissions(entity: Entity, block: BlockPos, default: Boolean = false, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
     return if (entity is PlayerEntity) checkPermissions(entity, block, requiredPermissions) else hasIndirectPermissions(entity, block, default, requiredPermissions)
   }
+  
+  fun sendClaimChangeMessage(player: PlayerEntity, oldClaim: ClaimedChunk?, newClaim: ClaimedChunk?) {
+    scope.launch(Dispatchers.IO) {
+      if (newClaim != oldClaim) {
+        if (newClaim == null) {
+          player.sendActionBar(settings.exitingClaim?.templateText("owner" to MojangApi.getPlayerInfoOrNull(oldClaim!!.owner)))
+        } else {
+          player.sendActionBar(settings.enteringClaim?.templateText("owner" to MojangApi.getPlayerInfoOrNull(newClaim.owner)))
+        }
+      }
+    }
+  }
 
   override fun onInitialize() {
     val (db, commands, settings) = json.readFileAs(configFile("pureclaims.json"), Config())
@@ -150,7 +164,7 @@ object PureClaims : ModInitializer {
       permissions = Permissions()
     }
     ServerLifecycleEvents.SERVER_STOPPED.register {
-      executor.shutdownNow()
+      scope.cancel()
     }
     Events.registerEvents()
     CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
@@ -182,6 +196,8 @@ object PureClaims : ModInitializer {
       val cannotEdit: String? = "{\"text\": \"You don't have permission to edit!\", \"color\": \"red\"}",
       val cannotInteract: String? = "{\"text\": \"You don't have permission to interact!\", \"color\": \"red\"}",
       val cannotDamageMobs: String? = "{\"text\": \"You don't have permission to damage mobs!\", \"color\": \"red\"}",
+      val enteringClaim: String? = "[{\"text\": \"You entered the claim of \", \"color\": \"gray\"}, {\"text\": \"\${owner.name}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
+      val exitingClaim: String? = "[{\"text\": \"You exiting the claim of \", \"color\": \"gray\"}, {\"text\": \"\${owner.name}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
       val maxClaims: Int = 10
     )
   }

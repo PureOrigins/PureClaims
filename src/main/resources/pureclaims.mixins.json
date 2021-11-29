@@ -11,6 +11,7 @@
     "PressurePlateBlockMixin",
     "ProjectileEntityMixin",
     "ServerPlayerInteractionManagerMixin",
+    "ServerPlayNetworkHandlerMixin",
     "ServerWorldMixin",
     "WeightedPressurePlateBlockMixin"
   ],
