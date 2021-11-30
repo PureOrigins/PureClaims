@@ -162,15 +162,23 @@ object PureClaims : ModInitializer {
     player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
   }
   
-  fun highlightChunk(player: ServerPlayerEntity, chunk: ChunkPos) = scope.launch(Dispatchers.IO) {
-    val worldBorder = worldBorder(chunk)
-    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
-    delay(333)
-    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
-    delay(333)
-    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
-    delay(333)
-    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
+  private val claimHighlights = mutableMapOf<ServerPlayerEntity, Job>()
+  
+  fun highlightChunk(player: ServerPlayerEntity, chunk: ChunkPos) {
+    if (player in claimHighlights) return
+    val job = scope.launch(Dispatchers.IO) {
+      val worldBorder = worldBorder(chunk)
+      player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
+      delay(333)
+      player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
+      delay(333)
+      player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
+      delay(333)
+      player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
+      delay(333)
+      claimHighlights -= player
+    }
+    claimHighlights[player] = job
   }
   
   private fun worldBorder(chunk: ChunkPos) = WorldBorder().apply {
