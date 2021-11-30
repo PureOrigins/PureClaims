@@ -13,11 +13,14 @@ import net.minecraft.entity.TntEntity
 import net.minecraft.entity.mob.MobEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.entity.projectile.ProjectileEntity
+import net.minecraft.network.packet.s2c.play.WorldBorderInitializeS2CPacket
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.ChunkPos
 import net.minecraft.world.World
+import net.minecraft.world.border.WorldBorder
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Transaction
@@ -106,6 +109,7 @@ object PureClaims : ModInitializer {
   fun checkPermissions(player: PlayerEntity, chunk: ChunkPos, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
     return hasPermissions(player, chunk, requiredPermissions).also {
       if (!it) {
+        if (player is ServerPlayerEntity) highlightChunk(player, chunk)
         when (requiredPermissions) {
           ClaimPermissions.EDIT -> player.sendActionBar(settings.cannotEdit?.templateText())
           ClaimPermissions.INTERACT -> player.sendActionBar(settings.cannotInteract?.templateText())
@@ -150,6 +154,32 @@ object PureClaims : ModInitializer {
         }
       }
     }
+  }
+  
+  fun highlightChunk(player: ServerPlayerEntity, chunk: ChunkPos, time: Long) = scope.launch(Dispatchers.IO) {
+    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder(chunk)))
+    delay(time)
+    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
+  }
+  
+  fun highlightChunk(player: ServerPlayerEntity, chunk: ChunkPos) = scope.launch(Dispatchers.IO) {
+    val worldBorder = worldBorder(chunk)
+    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
+    delay(333)
+    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
+    delay(333)
+    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
+    delay(333)
+    player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
+  }
+  
+  private fun worldBorder(chunk: ChunkPos) = WorldBorder().apply {
+    setCenter(chunk.x * 16.0 + 8.0, chunk.z * 16.0 + 8.0)
+    size = 16.0
+    damagePerBlock = 0.0
+    warningTime = 0
+    safeZone = 0.0
+    warningBlocks = 0
   }
 
   override fun onInitialize() {
@@ -196,8 +226,8 @@ object PureClaims : ModInitializer {
       val cannotEdit: String? = "{\"text\": \"You don't have permission to edit!\", \"color\": \"red\"}",
       val cannotInteract: String? = "{\"text\": \"You don't have permission to interact!\", \"color\": \"red\"}",
       val cannotDamageMobs: String? = "{\"text\": \"You don't have permission to damage mobs!\", \"color\": \"red\"}",
-      val enteringClaim: String? = "[{\"text\": \"You entered the claim of \", \"color\": \"gray\"}, {\"text\": \"\${owner.name}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
-      val exitingClaim: String? = "[{\"text\": \"You exiting the claim of \", \"color\": \"gray\"}, {\"text\": \"\${owner.name}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
+      val enteringClaim: String? = "[{\"text\": \"You entered the claim of \", \"color\": \"gray\"}, {\"text\": \"<#if owner??>\${owner.name}<#else>Unknown</#if>\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
+      val exitingClaim: String? = "[{\"text\": \"You exiting the claim of \", \"color\": \"gray\"}, {\"text\": \"<#if owner??>\${owner.name}<#else>Unknown</#if>\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
       val maxClaims: Int = 10
     )
   }
