@@ -135,12 +135,12 @@ object PureClaims : ModInitializer {
   }
   
   @JvmOverloads
-  fun hasIndirectPermissions(entity: Entity, block: BlockPos, default: Boolean = false, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
-    return hasPermissions(entity.inferPlayer() ?: return default, block, requiredPermissions)
+  fun hasIndirectPermissions(entity: Entity?, block: BlockPos, default: Boolean = false, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    return hasPermissions(entity?.inferPlayer() ?: return default, block, requiredPermissions)
   }
   
   @JvmOverloads
-  fun checkIndirectPermissions(entity: Entity, block: BlockPos, default: Boolean = false, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+  fun checkIndirectPermissions(entity: Entity?, block: BlockPos, default: Boolean = false, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
     return if (entity is PlayerEntity) checkPermissions(entity, block, requiredPermissions) else hasIndirectPermissions(entity, block, default, requiredPermissions)
   }
   
@@ -167,16 +167,20 @@ object PureClaims : ModInitializer {
   fun highlightChunk(player: ServerPlayerEntity, chunk: ChunkPos) {
     if (player in claimHighlights) return
     val job = scope.launch(Dispatchers.IO) {
-      val worldBorder = worldBorder(chunk)
-      player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
-      delay(333)
-      player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
-      delay(333)
-      player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
-      delay(333)
-      player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
-      delay(333)
-      claimHighlights -= player
+      try {
+        val worldBorder = worldBorder(chunk)
+        player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
+        delay(333)
+        player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
+        delay(333)
+        player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(worldBorder))
+        delay(333)
+        player.networkHandler.sendPacket(WorldBorderInitializeS2CPacket(player.world.worldBorder))
+        delay(333)
+        claimHighlights -= player
+      } catch (e: CancellationException) {
+        claimHighlights -= player
+      }
     }
     claimHighlights[player] = job
   }

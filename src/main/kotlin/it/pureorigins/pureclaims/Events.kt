@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.block.CakeBlock
 import net.minecraft.block.DoorBlock
 import net.minecraft.block.enums.DoubleBlockHalf
+import net.minecraft.entity.LivingEntity
+import net.minecraft.entity.decoration.ArmorStandEntity
 import net.minecraft.item.TallBlockItem
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket
 import net.minecraft.server.network.ServerPlayerEntity
@@ -13,7 +15,11 @@ import net.minecraft.util.ActionResult
 object Events {
   fun registerEvents() {
     AttackEntityCallback.EVENT.register { player, _, _, entity, _ ->
-      PureClaims.checkPermissions(player, entity.blockPos, ClaimPermissions.DAMAGE_MOBS).toActionResult()
+      if (entity is LivingEntity && entity !is ArmorStandEntity) {
+        PureClaims.checkPermissions(player, entity.blockPos, ClaimPermissions.DAMAGE_MOBS)
+      } else {
+        PureClaims.checkPermissions(player, entity.blockPos, ClaimPermissions.EDIT)
+      }.toActionResult()
     }
 
     UseBlockCallback.EVENT.register { player, world, hand, hit ->
