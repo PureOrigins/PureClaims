@@ -8,7 +8,7 @@
     "BucketItemMixin",
     "FarmlandBlockMixin",
     "FireBlockMixin",
-    "PistonBlockMixin",
+    "PistonHandlerMixin",
     "PressurePlateBlockMixin",
     "ProjectileEntityMixin",
     "ServerPlayerInteractionManagerMixin",
