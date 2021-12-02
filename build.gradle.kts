@@ -33,7 +33,7 @@ dependencies {
     modImplementation("com.github.PureOrigins:Database:$databaseVersion")
 }
 tasks {
-    val javaVersion = JavaVersion.VERSION_16
+    val javaVersion = JavaVersion.VERSION_17
     withType<JavaCompile> {
         options.encoding = "UTF-8"
         sourceCompatibility = javaVersion.toString()

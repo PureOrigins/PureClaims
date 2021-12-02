@@ -27,10 +27,10 @@
         "fabricloader":">=0.11.6",
         "fabric":"*",
         "fabric-language-kotlin":">=1.6.3+kotlin.1.5.21",
-        "minecraft":"1.17.x",
+        "minecraft":">=1.18",
         "java":">=16",
-        "pureconfiguration":"^1.0.0",
-        "kotlin-database":  "^1.0.0"
+        "pureconfiguration":"^1.0.8",
+        "kotlin-database":  "^1.0.2"
     },
     "mixins": [
         "pureclaims.mixins.json"
