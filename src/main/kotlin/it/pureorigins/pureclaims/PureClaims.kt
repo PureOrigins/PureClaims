@@ -123,13 +123,15 @@ object PureClaims : ModInitializer {
     return checkPermissions(player, ChunkPos(block), requiredPermissions)
   }
   
-  fun Entity.inferPlayer(): PlayerEntity? {
+  @JvmOverloads
+  fun Entity.inferPlayer(maxRecursionLevel: Int = 5): PlayerEntity? {
+    if (maxRecursionLevel <= 0) return null
     return when (this) {
       is PlayerEntity -> this
-      is MobEntity -> target?.inferPlayer()
-      is ProjectileEntity -> owner?.inferPlayer()
+      is MobEntity -> target?.inferPlayer(maxRecursionLevel - 1)
+      is ProjectileEntity -> owner?.inferPlayer(maxRecursionLevel - 1)
       is ItemEntity -> if (thrower != null) this@PureClaims.server.playerManager.getPlayer(thrower) else null
-      is TntEntity -> causingEntity?.inferPlayer()
+      is TntEntity -> causingEntity?.inferPlayer(maxRecursionLevel - 1)
       else -> null
     }
   }
@@ -215,7 +217,7 @@ object PureClaims : ModInitializer {
 
     //Test
     ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-      claims[handler.player.world, ChunkPos(0, 0)] = ClaimedChunk(UUID.fromString("00000000-0000-0000-0000-000000000000"), server.overworld, ChunkPos(0,0))
+      claims[handler.player.world, ChunkPos(0, 0)] = ClaimedChunk(UUID.fromString("bc27afd7-6889-4811-97c9-135ee46cdabc"), server.overworld, ChunkPos(0, 0))
     }
   }
 
