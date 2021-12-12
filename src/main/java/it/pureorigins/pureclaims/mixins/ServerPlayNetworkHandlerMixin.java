@@ -21,8 +21,11 @@ public class ServerPlayNetworkHandlerMixin {
   private void onPlayerMove(PlayerMoveC2SPacket packet, CallbackInfo callback) {
     var oldPosition = player.getChunkPos();
     var newPosition = new ChunkPos(new BlockPos(packet.getX(player.getX()), packet.getY(player.getY()), packet.getZ(player.getZ())));
-    var oldClaim = PureClaims.INSTANCE.getClaim(player.world, oldPosition);
-    var newClaim = PureClaims.INSTANCE.getClaim(player.world, newPosition);
-    PureClaims.INSTANCE.sendClaimChangeMessage(player, oldClaim, newClaim);
+    try {
+      var oldClaim = PureClaims.INSTANCE.getClaim(player.world, oldPosition);
+      var newClaim = PureClaims.INSTANCE.getClaim(player.world, newPosition);
+      PureClaims.INSTANCE.sendClaimChangeMessage(player, oldClaim, newClaim);
+    } catch (NullPointerException ignored) {
+    }
   }
 }
