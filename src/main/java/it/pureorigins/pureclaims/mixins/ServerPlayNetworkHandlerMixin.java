@@ -1,6 +1,5 @@
 package it.pureorigins.pureclaims.mixins;
 
-import it.pureorigins.framework.configuration.MessagesKt;
 import it.pureorigins.pureclaims.PureClaims;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
