@@ -2,6 +2,7 @@ package it.pureorigins.pureclaims
 
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
+import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.minecraft.block.CakeBlock
 import net.minecraft.block.DoorBlock
 import net.minecraft.block.enums.DoubleBlockHalf
@@ -21,7 +22,9 @@ object Events {
         PureClaims.checkPermissions(player, entity.blockPos, ClaimPermissions.EDIT)
       }.toActionResult()
     }
-
+    UseEntityCallback.EVENT.register { player, _, _, entity, _ ->
+      PureClaims.checkPermissions(player, entity.blockPos, ClaimPermissions.INTERACT).toActionResult()
+    }
     UseBlockCallback.EVENT.register { player, world, hand, hit ->
       if (player !is ServerPlayerEntity) return@register ActionResult.PASS
       if (PureClaims.checkPermissions(player, hit.blockPos, ClaimPermissions.INTERACT)) {
