@@ -1,59 +1,47 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
-    id("fabric-loom")
     val kotlinVersion: String by System.getProperties()
-    kotlin("jvm").version(kotlinVersion)
-    kotlin("plugin.serialization").version(kotlinVersion)
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.serialization") version kotlinVersion
+    id("io.papermc.paperweight.userdev") version "1.3.4"
+    id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
 }
-base {
-    val archivesBaseName: String by project
-    archivesName.set(archivesBaseName)
+
+bukkit {
+    name = project.name
+    version = project.version.toString()
+    main = "it.pureorigins.${project.name.toLowerCase()}.${project.name}"
+    depend = listOf("PureCommon")
 }
-val modVersion: String by project
-version = modVersion
-val mavenGroup: String by project
-group = mavenGroup
-minecraft {}
+
 repositories {
-    maven(url = "https://jitpack.io")
+    maven("https://jitpack.io")
+    mavenCentral()
 }
+
 dependencies {
-    val minecraftVersion: String by project
-    minecraft("com.mojang:minecraft:$minecraftVersion")
-    val yarnMappings: String by project
-    mappings("net.fabricmc:yarn:$yarnMappings:v2")
-    val loaderVersion: String by project
-    modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
-    val fabricVersion: String by project
-    modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricVersion")
-    val fabricKotlinVersion: String by project
-    modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
-    val configurationVersion: String by project
-    modImplementation("com.github.PureOrigins:PureConfiguration:$configurationVersion")
-    val databaseVersion : String by project
-    modImplementation("com.github.PureOrigins:Database:$databaseVersion")
+    val spigotVersion: String by project
+    paperDevBundle(spigotVersion)
+    val commonVersion: String by project
+    compileOnly("com.github.PureOrigins:PureCommon:$commonVersion")
 }
-tasks {
-    val javaVersion = JavaVersion.VERSION_17
-    withType<JavaCompile> {
-        options.encoding = "UTF-8"
-        sourceCompatibility = javaVersion.toString()
-        targetCompatibility = javaVersion.toString()
-        options.release.set(javaVersion.toString().toInt())
-    }
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions { jvmTarget = javaVersion.toString() }
-        sourceCompatibility = javaVersion.toString()
-        targetCompatibility = javaVersion.toString()
-    }
-    jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
-    processResources {
-        inputs.property("version", project.version)
-        filesMatching("fabric.mod.json") { expand(mutableMapOf("version" to project.version)) }
-    }
-    java {
-        toolchain { languageVersion.set(JavaLanguageVersion.of(javaVersion.toString())) }
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
-        withSourcesJar()
+
+kotlin {
+    jvmToolchain { (this as JavaToolchainSpec).languageVersion.set(JavaLanguageVersion.of(17)) }
+}
+
+val compileKotlin: KotlinCompile by tasks
+compileKotlin.kotlinOptions { jvmTarget = "17" }
+
+afterEvaluate {
+    tasks {
+        reobfJar {
+            outputJar.set(jar.get().archiveFile)
+        }
+
+        build {
+            dependsOn(reobfJar)
+        }
     }
 }

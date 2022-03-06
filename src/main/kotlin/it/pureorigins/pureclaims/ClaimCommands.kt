@@ -1,7 +1,8 @@
 package it.pureorigins.pureclaims
 
-import it.pureorigins.framework.configuration.*
+import it.pureorigins.common.*
 import kotlinx.serialization.Serializable
+import org.bukkit.entity.Player
 
 class ClaimCommands(private val config: Config) {
 
@@ -10,7 +11,7 @@ class ClaimCommands(private val config: Config) {
   val command
     get() = literal(config.commandName) {
       requiresPermission(PERM_PREFIX)
-      success { source.sendFeedback(config.commandUsage?.templateText()) }
+      success { source.sendNullableMessage(config.commandUsage?.templateText()) }
       then(addCommand)
       then(removeCommand)
     }
@@ -19,16 +20,16 @@ class ClaimCommands(private val config: Config) {
     get() = literal(config.add.commandName) {
       requiresPermission("$PERM_PREFIX.add")
       success {
-        val player = source.player
-        val chunkPos = player.chunkPos
+        val player = source.bukkitSender as Player
+        val chunk = player.chunk
         when {
-          PureClaims.isClaimed(player.world, chunkPos) ->
-            source.sendFeedback(config.add.alreadyClaimed?.templateText())
+          PureClaims.isClaimed(player.world, chunk) ->
+            source.sendNullableMessage(config.add.alreadyClaimed?.templateText())
           // PureClaims.getClaimCount(player.uuid) >= PureClaims.getMaxClaims(player.uuid) ->
-          //     source.sendFeedback(config.add.noClaimSlotsAvailable?.templateText())
+          //     source.sendNullableMessage(config.add.noClaimSlotsAvailable?.templateText())
           else -> {
-            PureClaims.addClaim(ClaimedChunk(player.uuid, player.world, chunkPos))
-            source.sendFeedback(config.add.success?.templateText())
+            PureClaims.addClaim(ClaimedChunk(player.uniqueId, player.world, chunk))
+            source.sendNullableMessage(config.add.success?.templateText())
           }
         }
       }
@@ -38,16 +39,16 @@ class ClaimCommands(private val config: Config) {
     get() = literal(config.remove.commandName) {
       requiresPermission("$PERM_PREFIX.remove")
       success {
-        val player = source.player
-        val chunkPos = player.chunkPos
+        val player = source.bukkitSender as Player
+        val chunk = player.chunk
         when {
-          !PureClaims.isClaimed(player.world, chunkPos) ->
-            source.sendFeedback(config.remove.notClaimed?.templateText())
-          PureClaims.getClaim(player.world, chunkPos)?.owner != source.player.uuid ->
-            source.sendFeedback(config.remove.claimedByAnotherPlayer?.templateText())
+          !PureClaims.isClaimed(player.world, chunk) ->
+            source.sendNullableMessage(config.remove.notClaimed?.templateText())
+          PureClaims.getClaim(player.world, chunk)?.owner != player.uniqueId ->
+            source.sendNullableMessage(config.remove.claimedByAnotherPlayer?.templateText())
           else -> {
-            PureClaims.removeClaim(PureClaims.getClaim(player.world, chunkPos)!!)
-            source.sendFeedback(config.add.success?.templateText())
+            PureClaims.removeClaim(PureClaims.getClaim(player.world, chunk)!!)
+            source.sendNullableMessage(config.add.success?.templateText())
           }
         }
       }
@@ -57,7 +58,7 @@ class ClaimCommands(private val config: Config) {
     get() = literal(config.info.commandName) {
       requiresPermission("$PERM_PREFIX.info")
       success {
-        source.sendFeedback(config.add.success?.templateText())
+        source.sendNullableMessage(config.add.success?.templateText())
       }
     }
 
