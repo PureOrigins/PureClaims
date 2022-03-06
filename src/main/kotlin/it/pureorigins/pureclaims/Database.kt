@@ -11,7 +11,7 @@ import java.util.*
 
 object PlayerClaimsTable : Table("player_claims") {
   val playerUniqueId = uuid("player_id")
-  val world = text("world")
+  val world = varchar("world", length = 45)
   val chunkPos = long("chunk_pos")
 
   override val primaryKey = PrimaryKey(world, chunkPos)
