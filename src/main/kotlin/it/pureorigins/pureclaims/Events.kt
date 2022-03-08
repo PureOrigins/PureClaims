@@ -62,7 +62,7 @@ class Events : Listener {
 
     @EventHandler
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
-        if(e.damager is Player && !plugin.hasPermissions(e.damager as Player, e.entity.chunk, ClaimPermissions.DAMAGE_MOBS))
+        if(e.damager is Player && e.entity !is Player && !plugin.hasPermissions(e.damager as Player, e.entity.chunk, ClaimPermissions.DAMAGE_MOBS))
             e.isCancelled = true
     }
 }
