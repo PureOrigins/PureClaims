@@ -111,8 +111,7 @@ class PureClaims : JavaPlugin() {
         }
     }
 
-    fun checkPermissions(player: Player, location: Location, requiredPermissions: ClaimPermissions.() -> Boolean
-    ): Boolean {
+    fun checkPermissions(player: Player, location: Location, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
         return checkPermissions(player, location.chunk, requiredPermissions)
     }
     
