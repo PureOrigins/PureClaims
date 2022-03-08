@@ -1,6 +1,7 @@
 package it.pureorigins.pureclaims
 
 import it.pureorigins.common.registerEvents
+import it.pureorigins.common.runTaskAsynchronously
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -16,7 +17,9 @@ class Permissions(private val plugin: PureClaims, private val permissions: Mutab
   @EventHandler
   fun onPlayerJoin(event: PlayerJoinEvent) {
     val uuid = event.player.uniqueId
-    this.permissions[uuid] = plugin.getPermissionsDatabase(uuid)
+    plugin.runTaskAsynchronously {
+      this.permissions[uuid] = plugin.getPermissionsDatabase(uuid)
+    }
   }
   
   @EventHandler
