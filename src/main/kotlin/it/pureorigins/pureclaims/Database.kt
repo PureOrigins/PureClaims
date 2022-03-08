@@ -1,13 +1,10 @@
 package it.pureorigins.pureclaims
 
-import net.minecraft.server.MinecraftServer
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.ChunkPos
-import net.minecraft.util.registry.Registry
-import net.minecraft.util.registry.RegistryKey
-import net.minecraft.world.World
+import org.bukkit.Bukkit
+import org.bukkit.Chunk
 import org.jetbrains.exposed.sql.*
 import java.util.*
+import kotlin.collections.HashMap
 
 object PlayerClaimsTable : Table("player_claims") {
   val playerUniqueId = uuid("player_id")
@@ -20,19 +17,19 @@ object PlayerClaimsTable : Table("player_claims") {
     select { PlayerClaimsTable.playerUniqueId eq playerUniqueId }
       .map { it.toClaimedChunk() }
 
-  fun getClaim(world: World, chunkPos: ChunkPos): ClaimedChunk? =
-    select { (PlayerClaimsTable.world eq world.registryKey.value.toString()) and (PlayerClaimsTable.chunkPos eq chunkPos.toLong()) }
+  fun getClaim(chunk: Chunk): ClaimedChunk? =
+    select { (world eq chunk.world.name) and (chunkPos eq chunk.chunkKey) }
       .map { it.toClaimedChunk() }.singleOrNull()
 
 
   fun add(chunk: ClaimedChunk): Boolean = insertIgnore {
     it[playerUniqueId] = chunk.owner
-    it[chunkPos] = chunk.chunkPos.toLong()
-    it[world] = chunk.world.registryKey.value.toString()
+    it[chunkPos] = chunk.chunk.chunkKey
+    it[world] = chunk.chunk.world.name
   }.insertedCount > 0
 
   fun remove(chunk: ClaimedChunk): Boolean = deleteWhere {
-    (chunkPos eq chunk.chunkPos.toLong()) and (world eq chunk.world.registryKey.value.toString())
+    (chunkPos eq chunk.chunk.chunkKey) and (world eq chunk.chunk.world.name)
   } > 0
 
   fun getClaimCount(playerUniqueId: UUID): Long = select { PlayerClaimsTable.playerUniqueId eq playerUniqueId }.count()
@@ -46,8 +43,8 @@ object PermissionsTable : Table("claim_permissions") {
   val canDamageMobs = bool("can_damage_mobs")
   override val primaryKey = PrimaryKey(ownerUniqueId, playerUniqueId)
 
-  fun getPermissions(targetId: UUID): Map<UUID, ClaimPermissions> =
-    select { playerUniqueId eq targetId }.associate { it.toClaimPermission() }
+  fun getPermissions(targetId: UUID): MutableMap<UUID, ClaimPermissions> =
+    select { playerUniqueId eq targetId }.associateTo(HashMap()) { it.toClaimPermission() }
 
   fun add(ownerId: UUID, targetId: UUID, permissions: ClaimPermissions): Boolean = insertIgnore {
     it[playerUniqueId] = targetId
@@ -89,10 +86,10 @@ object PlayerTable : Table("players") {
   }
 }
 
-private fun ResultRow.toClaimedChunk(server: MinecraftServer = PureClaims.server) = ClaimedChunk(
+private fun ResultRow.toClaimedChunk() = ClaimedChunk(
   get(PlayerClaimsTable.playerUniqueId),
-  server.getWorld(RegistryKey.of(Registry.WORLD_KEY, Identifier(get(PlayerClaimsTable.world)))) ?: error("Unknown world '${get(PlayerClaimsTable.world)}'"),
-  ChunkPos(get(PlayerClaimsTable.chunkPos))
+  Bukkit.getWorld(get(PlayerClaimsTable.world))?.getChunkAt(get(PlayerClaimsTable.chunkPos))
+    ?: error("Unknown world '${get(PlayerClaimsTable.world)}'"),
 )
 
 private fun ResultRow.toClaimPermission() = get(PermissionsTable.ownerUniqueId) to ClaimPermissions(

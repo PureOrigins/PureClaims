@@ -1,25 +1,29 @@
 package it.pureorigins.pureclaims
 
-import kotlinx.coroutines.*
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
-import net.minecraft.util.math.ChunkPos
-import net.minecraft.world.World
+import it.pureorigins.common.registerEvents
+import it.pureorigins.common.runTaskAsynchronously
+import org.bukkit.Chunk
+import org.bukkit.event.EventHandler
+import org.bukkit.event.Listener
+import org.bukkit.event.world.ChunkLoadEvent
+import org.bukkit.event.world.ChunkUnloadEvent
 
-class Claims(private val claims: MutableMap<Pair<World, ChunkPos>, Deferred<ClaimedChunk?>> = HashMap()) : MutableMap<Pair<World, ChunkPos>, Deferred<ClaimedChunk?>> by claims {
+class Claims(private val plugin: PureClaims, private val claims: MutableMap<Chunk, ClaimedChunk?> = HashMap()) : MutableMap<Chunk, ClaimedChunk?> by claims, Listener {
   init {
-    ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
-      val pos = chunk.pos
-      claims[world to pos] = PureClaims.getClaimedChunkNotCached(world, pos)
-    }
-    ServerChunkEvents.CHUNK_UNLOAD.register { world, chunk ->
-      claims -= world to chunk.pos
+    plugin.registerEvents(this)
+  }
+  
+  @EventHandler
+  fun onChunkLoad(event: ChunkLoadEvent) {
+    val chunk = event.chunk
+    plugin.runTaskAsynchronously {
+      claims[chunk] = plugin.getClaimedChunkDatabase(chunk)
     }
   }
   
-  operator fun contains(key: Pair<World, ChunkPos>): Boolean = runBlocking { claims[key]?.await() != null }
-
-  operator fun get(world: World, pos: ChunkPos): ClaimedChunk? = runBlocking { claims[world to pos]!!.await() }
-  operator fun set(world: World, pos: ChunkPos, claim: ClaimedChunk?) {
-    claims[world to pos] = CompletableDeferred(claim)
+  @EventHandler
+  fun onChunkUnload(event: ChunkUnloadEvent) {
+    val chunk = event.chunk
+    claims -= chunk
   }
 }

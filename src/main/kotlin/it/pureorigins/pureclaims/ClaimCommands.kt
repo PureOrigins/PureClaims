@@ -4,60 +4,59 @@ import it.pureorigins.common.*
 import kotlinx.serialization.Serializable
 import org.bukkit.entity.Player
 
-class ClaimCommands(private val config: Config) {
-
+class ClaimCommands(private val plugin: PureClaims, private val config: Config) {
   private val PERM_PREFIX = "pureclaims.claim"
 
-  val command
-    get() = literal(config.commandName) {
+  val command get() = literal(config.commandName) {
       requiresPermission(PERM_PREFIX)
       success { source.sendNullableMessage(config.commandUsage?.templateText()) }
       then(addCommand)
       then(removeCommand)
     }
 
-  private val addCommand
-    get() = literal(config.add.commandName) {
+  private val addCommand get() = literal(config.add.commandName) {
       requiresPermission("$PERM_PREFIX.add")
       success {
         val player = source.bukkitSender as Player
         val chunk = player.chunk
+        if (!plugin.isLoaded(chunk) || !plugin.isLoaded(player)) return@success source.sendNullableMessage(config.chunkNotLoaded?.templateText())
         when {
-          PureClaims.isClaimed(player.world, chunk) ->
+          plugin.isClaimed(player.chunk) ->
             source.sendNullableMessage(config.add.alreadyClaimed?.templateText())
+          // TODO remove comment, this is for testing
           // PureClaims.getClaimCount(player.uuid) >= PureClaims.getMaxClaims(player.uuid) ->
           //     source.sendNullableMessage(config.add.noClaimSlotsAvailable?.templateText())
           else -> {
-            PureClaims.addClaim(ClaimedChunk(player.uniqueId, player.world, chunk))
+            plugin.addClaimDatabase(ClaimedChunk(player.uniqueId, player.chunk))
             source.sendNullableMessage(config.add.success?.templateText())
           }
         }
       }
     }
 
-  private val removeCommand
-    get() = literal(config.remove.commandName) {
+  private val removeCommand get() = literal(config.remove.commandName) {
       requiresPermission("$PERM_PREFIX.remove")
       success {
         val player = source.bukkitSender as Player
         val chunk = player.chunk
+        if (!plugin.isLoaded(chunk) || !plugin.isLoaded(player)) return@success source.sendNullableMessage(config.chunkNotLoaded?.templateText())
         when {
-          !PureClaims.isClaimed(player.world, chunk) ->
+          !plugin.isClaimed(player.chunk) ->
             source.sendNullableMessage(config.remove.notClaimed?.templateText())
-          PureClaims.getClaim(player.world, chunk)?.owner != player.uniqueId ->
+          plugin.getClaim(player.chunk)?.owner != player.uniqueId ->
             source.sendNullableMessage(config.remove.claimedByAnotherPlayer?.templateText())
           else -> {
-            PureClaims.removeClaim(PureClaims.getClaim(player.world, chunk)!!)
+            plugin.removeClaimDatabase(plugin.getClaim(player.chunk)!!)
             source.sendNullableMessage(config.add.success?.templateText())
           }
         }
       }
     }
 
-  private val infoCommand
-    get() = literal(config.info.commandName) {
+  private val infoCommand get() = literal(config.info.commandName) {
       requiresPermission("$PERM_PREFIX.info")
       success {
+        // TODO
         source.sendNullableMessage(config.add.success?.templateText())
       }
     }
@@ -66,6 +65,7 @@ class ClaimCommands(private val config: Config) {
   data class Config(
     val commandName: String = "claim",
     val commandUsage: String? = "[{\"text\": \"Usage: \", \"color\": \"dark_gray\"}, {\"text\": \"/claim <add | remove | info>\", \"color\": \"gray\"}]",
+    val chunkNotLoaded: String? = "{\"text\": \"this chunk is not loaded yet.\", \"color\": \"dark_gray\"}",
     val add: Add = Add(),
     val remove: Remove = Remove(),
     val info: Info = Info()
