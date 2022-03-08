@@ -5,8 +5,9 @@ import kotlinx.serialization.Serializable
 import net.minecraft.network.chat.ChatType.GAME_INFO
 import net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket
 import net.minecraft.world.level.border.WorldBorder
-import org.bukkit.*
 import org.bukkit.Bukkit.getOfflinePlayer
+import org.bukkit.Chunk
+import org.bukkit.Location
 import org.bukkit.craftbukkit.v1_18_R2.CraftWorld
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer
 import org.bukkit.entity.Player
@@ -17,6 +18,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
 class PureClaims : JavaPlugin() {
+    companion object {
+        internal lateinit var plugin: PureClaims
+    }
     private lateinit var database: Database
     private lateinit var claims: Claims
     private lateinit var permissions: Permissions
@@ -161,6 +165,7 @@ class PureClaims : JavaPlugin() {
         claims = Claims(this)
         permissions = Permissions(this)
         registerCommand(ClaimCommands(this, commands).command)
+        plugin = this
     }
 
 
