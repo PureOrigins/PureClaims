@@ -1,8 +1,6 @@
 package it.pureorigins.pureclaims
 
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.EDIT
-import org.bukkit.entity.EntityType.ARMOR_STAND
-import org.bukkit.entity.EntityType.ITEM_FRAME
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -42,7 +40,7 @@ object Events : Listener {
 
     @EventHandler
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
-        if(e.entity !is Player && !plugin.checkPermissions(e.damager as Player, e.entity.chunk, ClaimPermissions.DAMAGE_MOBS))
+        if(e.entity !is Player && !plugin.checkPermissions(e.damager, e.entity.chunk, ClaimPermissions.DAMAGE_MOBS))
             e.isCancelled = true
     }
 }
