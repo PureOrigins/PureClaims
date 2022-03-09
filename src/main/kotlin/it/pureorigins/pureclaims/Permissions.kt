@@ -2,6 +2,7 @@ package it.pureorigins.pureclaims
 
 import it.pureorigins.common.registerEvents
 import it.pureorigins.common.runTaskAsynchronously
+import org.bukkit.OfflinePlayer
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -27,7 +28,7 @@ class Permissions(private val plugin: PureClaims, private val permissions: Mutab
     permissions -= event.player.uniqueId
   }
 
-  operator fun get(player: Player, claim: ClaimedChunk): ClaimPermissions {
+  operator fun get(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions {
     return permissions[player.uniqueId]?.get(claim.owner)
       ?: if (claim.owner == player.uniqueId) ClaimPermissions.ALL else ClaimPermissions.NONE
   }

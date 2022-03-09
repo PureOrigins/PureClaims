@@ -8,6 +8,7 @@ import net.minecraft.world.level.border.WorldBorder
 import org.bukkit.Bukkit.getOfflinePlayer
 import org.bukkit.Chunk
 import org.bukkit.Location
+import org.bukkit.OfflinePlayer
 import org.bukkit.craftbukkit.v1_18_R2.CraftWorld
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer
 import org.bukkit.entity.Player
@@ -17,10 +18,9 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
+internal lateinit var plugin: PureClaims
+
 class PureClaims : JavaPlugin() {
-    companion object {
-        internal lateinit var plugin: PureClaims
-    }
     private lateinit var database: Database
     private lateinit var claims: Claims
     private lateinit var permissions: Permissions
@@ -50,11 +50,11 @@ class PureClaims : JavaPlugin() {
         PlayerTable.incrementMaxClaims(playerUniqueId, maxClaims)
     }
     
-    fun isLoaded(player: Player): Boolean {
+    fun isLoaded(player: OfflinePlayer): Boolean {
         return player.uniqueId in permissions
     }
     
-    fun getPermissions(player: Player, claim: ClaimedChunk): ClaimPermissions {
+    fun getPermissions(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions {
         return permissions[player, claim]
     }
     
@@ -90,7 +90,7 @@ class PureClaims : JavaPlugin() {
         }
     }
 
-    fun hasPermissions(player: Player, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    fun hasPermissions(player: OfflinePlayer, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
         if (!isLoaded(player) || !isLoaded(chunk)) return false
         
         val claim = claims[chunk] ?: return true
@@ -98,13 +98,16 @@ class PureClaims : JavaPlugin() {
         return permissions.requiredPermissions()
     }
 
-    fun hasPermissions(player: Player, location: Location, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
-        return hasPermissions(player, location.chunk, requiredPermissions)
+    fun hasPermissions(cause: Chunk, chunk: Chunk): Boolean {
+        if (!isLoaded(chunk)) return false
+        val claim = claims[chunk] ?: return true
+        if (!isLoaded(cause)) return false
+        return claim.owner == claims[cause]?.owner
     }
 
-    fun checkPermissions(player: Player, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    fun checkPermissions(player: OfflinePlayer, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
         return hasPermissions(player, chunk, requiredPermissions).also {
-            if (!it) {
+            if (!it && player is Player) {
                 highlightChunk(player, chunk)
                 when (requiredPermissions) {
                     ClaimPermissions.EDIT -> player.sendNullableMessage(settings.cannotEdit?.templateText(), GAME_INFO)
@@ -113,10 +116,6 @@ class PureClaims : JavaPlugin() {
                 }
             }
         }
-    }
-
-    fun checkPermissions(player: Player, location: Location, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
-        return checkPermissions(player, location.chunk, requiredPermissions)
     }
     
     fun highlightChunk(player: Player, chunk: Chunk) {
@@ -153,7 +152,11 @@ class PureClaims : JavaPlugin() {
             }
         }
     }
-
+    
+    override fun onLoad() {
+        plugin = this
+    }
+    
     override fun onEnable() {
         val (db, commands, settings) = json.readFileAs(file("pureclaims.json"), Config())
         require(db.url.isNotEmpty()) { "Database url is empty" }
@@ -164,8 +167,8 @@ class PureClaims : JavaPlugin() {
         }
         claims = Claims(this)
         permissions = Permissions(this)
+        registerEvents(Events)
         registerCommand(ClaimCommands(this, commands).command)
-        plugin = this
     }
 
 
