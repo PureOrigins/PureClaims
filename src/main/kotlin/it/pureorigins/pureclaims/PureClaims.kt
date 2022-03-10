@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 import net.minecraft.network.chat.ChatType.GAME_INFO
 import net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket
 import net.minecraft.world.level.border.WorldBorder
+import org.bukkit.Bukkit
 import org.bukkit.Bukkit.getOfflinePlayer
 import org.bukkit.Chunk
 import org.bukkit.Location
@@ -49,15 +50,15 @@ class PureClaims : JavaPlugin() {
     fun incrementMaxClaimsDatabase(playerUniqueId: UUID, maxClaims: Int): Boolean = transaction(database) {
         PlayerTable.incrementMaxClaims(playerUniqueId, maxClaims)
     }
-    
+
     fun isLoaded(player: OfflinePlayer): Boolean {
         return player.uniqueId in permissions
     }
-    
+
     fun getPermissions(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions {
         return permissions[player, claim]
     }
-    
+
     fun isLoaded(chunk: Chunk): Boolean {
         return chunk in claims
     }
@@ -90,9 +91,13 @@ class PureClaims : JavaPlugin() {
         }
     }
 
-    fun hasPermissions(player: OfflinePlayer, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    fun hasPermissions(
+        player: OfflinePlayer,
+        chunk: Chunk,
+        requiredPermissions: ClaimPermissions.() -> Boolean
+    ): Boolean {
         if (!isLoaded(player) || !isLoaded(chunk)) return false
-        
+
         val claim = claims[chunk] ?: return true
         val permissions = getPermissions(player, claim)
         return permissions.requiredPermissions()
@@ -105,19 +110,29 @@ class PureClaims : JavaPlugin() {
         return claim.owner == claims[cause]?.owner
     }
 
-    fun checkPermissions(player: OfflinePlayer, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean {
+    fun checkPermissions(
+        player: OfflinePlayer,
+        chunk: Chunk,
+        requiredPermissions: ClaimPermissions.() -> Boolean
+    ): Boolean {
         return hasPermissions(player, chunk, requiredPermissions).also {
             if (!it && player is Player) {
                 highlightChunk(player, chunk)
                 when (requiredPermissions) {
                     ClaimPermissions.EDIT -> player.sendNullableMessage(settings.cannotEdit?.templateText(), GAME_INFO)
-                    ClaimPermissions.INTERACT -> player.sendNullableMessage(settings.cannotInteract?.templateText(), GAME_INFO)
-                    ClaimPermissions.DAMAGE_MOBS -> player.sendNullableMessage(settings.cannotDamageMobs?.templateText(), GAME_INFO)
+                    ClaimPermissions.INTERACT -> player.sendNullableMessage(
+                        settings.cannotInteract?.templateText(),
+                        GAME_INFO
+                    )
+                    ClaimPermissions.DAMAGE_MOBS -> player.sendNullableMessage(
+                        settings.cannotDamageMobs?.templateText(),
+                        GAME_INFO
+                    )
                 }
             }
         }
     }
-    
+
     fun highlightChunk(player: Player, chunk: Chunk) {
         fun worldBorder(chunk: Chunk) = WorldBorder().apply {
             setCenter(chunk.x * 16.0 + 8.0, chunk.z * 16.0 + 8.0)
@@ -126,12 +141,12 @@ class PureClaims : JavaPlugin() {
             warningTime = 0
             warningBlocks = 0
         }
-        
+
         runTaskAsynchronously {
             val newBorder = worldBorder(chunk)
             val craftPlayer = player as CraftPlayer
             val defaultBorder = (craftPlayer.world as CraftWorld).handle.worldBorder
-            
+
             craftPlayer.handle.connection.send(ClientboundInitializeBorderPacket(newBorder))
             Thread.sleep(333)
             craftPlayer.handle.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
@@ -143,20 +158,25 @@ class PureClaims : JavaPlugin() {
         }
     }
 
-    fun sendClaimChangeMessage(player: Player, oldClaim: ClaimedChunk, newClaim: ClaimedChunk?) {
-        if (newClaim != oldClaim) {
-            if (newClaim == null) {
-                player.sendNullableMessage(settings.exitingClaim?.templateText("owner" to getOfflinePlayer(oldClaim.owner).name), GAME_INFO)
-            } else {
-                player.sendNullableMessage(settings.enteringClaim?.templateText("owner" to getOfflinePlayer(newClaim.owner).name), GAME_INFO)
-            }
+    fun sendClaimChangeMessage(player: Player, oldClaim: ClaimedChunk?, newClaim: ClaimedChunk?) {
+        if (newClaim?.owner == oldClaim?.owner) return
+        if (newClaim != null) {
+            player.sendNullableMessage(
+                settings.enteringClaim?.templateText("owner" to getOfflinePlayer(newClaim.owner)),
+                GAME_INFO
+            )
+        } else {
+            player.sendNullableMessage(settings.exitingClaim?.templateText("owner" to oldClaim?.let {
+                getOfflinePlayer(it.owner)
+            }), GAME_INFO)
         }
+
     }
-    
+
     override fun onLoad() {
         plugin = this
     }
-    
+
     override fun onEnable() {
         val (db, commands, settings) = json.readFileAs(file("pureclaims.json"), Config())
         require(db.url.isNotEmpty()) { "Database url is empty" }

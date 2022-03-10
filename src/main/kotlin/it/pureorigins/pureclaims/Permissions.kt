@@ -11,6 +11,7 @@ import org.bukkit.event.player.PlayerQuitEvent
 import java.util.*
 
 class Permissions(private val plugin: PureClaims, private val permissions: MutableMap<UUID, MutableMap<UUID, ClaimPermissions>> = HashMap()): MutableMap<UUID, MutableMap<UUID, ClaimPermissions>> by permissions, Listener {
+
   init {
     plugin.registerEvents(this)
   }
