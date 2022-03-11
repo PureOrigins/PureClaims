@@ -5,13 +5,10 @@ import kotlinx.serialization.Serializable
 import net.minecraft.network.chat.ChatType.GAME_INFO
 import net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket
 import net.minecraft.world.level.border.WorldBorder
-import org.bukkit.Bukkit
 import org.bukkit.Bukkit.getOfflinePlayer
 import org.bukkit.Chunk
 import org.bukkit.Location
 import org.bukkit.OfflinePlayer
-import org.bukkit.craftbukkit.v1_18_R2.CraftWorld
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import org.jetbrains.exposed.sql.Database
@@ -134,7 +131,9 @@ class PureClaims : JavaPlugin() {
     }
 
     fun highlightChunk(player: Player, chunk: Chunk) {
+        val nmsWorld = player.world.nms
         fun worldBorder(chunk: Chunk) = WorldBorder().apply {
+            world = nmsWorld
             setCenter(chunk.x * 16.0 + 8.0, chunk.z * 16.0 + 8.0)
             size = 16.0
             damagePerBlock = 0.0
@@ -144,16 +143,15 @@ class PureClaims : JavaPlugin() {
 
         runTaskAsynchronously {
             val newBorder = worldBorder(chunk)
-            val craftPlayer = player as CraftPlayer
-            val defaultBorder = (craftPlayer.world as CraftWorld).handle.worldBorder
-
-            craftPlayer.handle.connection.send(ClientboundInitializeBorderPacket(newBorder))
+            val defaultBorder = nmsWorld.worldBorder
+            val nmsPlayer = player.nms
+            nmsPlayer.connection.send(ClientboundInitializeBorderPacket(newBorder))
             Thread.sleep(333)
-            craftPlayer.handle.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
+            nmsPlayer.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
             Thread.sleep(333)
-            craftPlayer.handle.connection.send(ClientboundInitializeBorderPacket(newBorder))
+            nmsPlayer.connection.send(ClientboundInitializeBorderPacket(newBorder))
             Thread.sleep(333)
-            craftPlayer.handle.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
+            nmsPlayer.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
             Thread.sleep(333)
         }
     }
