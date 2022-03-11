@@ -200,7 +200,7 @@ class PureClaims : JavaPlugin() {
     ) {
         @Serializable
         data class Database(
-            val url: String = "jdbc:sqlite:claims.db",
+            val url: String = "",
             val username: String = "",
             val password: String = ""
         )
