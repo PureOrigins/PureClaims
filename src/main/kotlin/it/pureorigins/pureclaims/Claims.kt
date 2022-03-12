@@ -13,17 +13,23 @@ class Claims(private val plugin: PureClaims, private val claims: MutableMap<Chun
     plugin.registerEvents(this)
   }
   
-  @EventHandler
-  fun onChunkLoad(event: ChunkLoadEvent) {
-    val chunk = event.chunk
+  fun register(chunk: Chunk) {
     plugin.runTaskAsynchronously {
       claims[chunk] = plugin.getClaimedChunkDatabase(chunk)
     }
   }
   
+  fun unregister(chunk: Chunk) {
+    claims -= chunk
+  }
+  
+  @EventHandler
+  fun onChunkLoad(event: ChunkLoadEvent) {
+    register(event.chunk)
+  }
+  
   @EventHandler
   fun onChunkUnload(event: ChunkUnloadEvent) {
-    val chunk = event.chunk
-    claims -= chunk
+    unregister(event.chunk)
   }
 }

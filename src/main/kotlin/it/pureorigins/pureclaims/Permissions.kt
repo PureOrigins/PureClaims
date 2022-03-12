@@ -11,22 +11,29 @@ import org.bukkit.event.player.PlayerQuitEvent
 import java.util.*
 
 class Permissions(private val plugin: PureClaims, private val permissions: MutableMap<UUID, MutableMap<UUID, ClaimPermissions>> = HashMap()): MutableMap<UUID, MutableMap<UUID, ClaimPermissions>> by permissions, Listener {
-
   init {
     plugin.registerEvents(this)
   }
   
-  @EventHandler
-  fun onPlayerJoin(event: PlayerJoinEvent) {
-    val uuid = event.player.uniqueId
+  fun register(player: Player) {
+    val uuid = player.uniqueId
     plugin.runTaskAsynchronously {
       this.permissions[uuid] = plugin.getPermissionsDatabase(uuid)
     }
   }
   
+  fun unregister(player: Player) {
+    permissions -= player.uniqueId
+  }
+  
+  @EventHandler
+  fun onPlayerJoin(event: PlayerJoinEvent) {
+    register(event.player)
+  }
+  
   @EventHandler
   fun onPlayerQuit(event: PlayerQuitEvent) {
-    permissions -= event.player.uniqueId
+    unregister(event.player)
   }
 
   operator fun get(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions {

@@ -164,8 +164,11 @@ class PureClaims : JavaPlugin() {
         permissions = Permissions(this)
         registerEvents(Events)
         registerCommand(ClaimCommands(this, commands).command)
-        Bukkit.getWorlds().forEach {
-            it?.loadedChunks?.forEach { runTaskAsynchronously { claims[it] = plugin.getClaimedChunkDatabase(it) } }
+        Bukkit.getWorlds().forEach { world ->
+            world.loadedChunks.forEach { claims.register(it) }
+        }
+        Bukkit.getOnlinePlayers().forEach {
+            permissions.register(it)
         }
     }
 

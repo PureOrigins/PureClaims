@@ -6,8 +6,8 @@ import org.jetbrains.exposed.sql.*
 import java.util.*
 
 object PlayerClaimsTable : Table("player_claims") {
-  val playerUniqueId = uuid("player_id")
-  val world = uuid("world")
+  val playerUniqueId = uuid("player_uuid")
+  val world = uuid("world_uuid")
   val chunkPos = long("chunk_pos")
 
   override val primaryKey = PrimaryKey(world, chunkPos)
