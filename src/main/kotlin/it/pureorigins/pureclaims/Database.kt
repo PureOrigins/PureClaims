@@ -4,11 +4,10 @@ import org.bukkit.Bukkit
 import org.bukkit.Chunk
 import org.jetbrains.exposed.sql.*
 import java.util.*
-import kotlin.collections.HashMap
 
 object PlayerClaimsTable : Table("player_claims") {
   val playerUniqueId = uuid("player_id")
-  val world = varchar("world", length = 45)
+  val world = uuid("world")
   val chunkPos = long("chunk_pos")
 
   override val primaryKey = PrimaryKey(world, chunkPos)
@@ -18,18 +17,18 @@ object PlayerClaimsTable : Table("player_claims") {
       .map { it.toClaimedChunk() }
 
   fun getClaim(chunk: Chunk): ClaimedChunk? =
-    select { (world eq chunk.world.name) and (chunkPos eq chunk.chunkKey) }
+    select { (world eq chunk.world.uid) and (chunkPos eq chunk.chunkKey) }
       .map { it.toClaimedChunk() }.singleOrNull()
 
 
   fun add(chunk: ClaimedChunk): Boolean = insertIgnore {
     it[playerUniqueId] = chunk.owner
     it[chunkPos] = chunk.chunk.chunkKey
-    it[world] = chunk.chunk.world.name
+    it[world] = chunk.chunk.world.uid
   }.insertedCount > 0
 
   fun remove(chunk: ClaimedChunk): Boolean = deleteWhere {
-    (chunkPos eq chunk.chunk.chunkKey) and (world eq chunk.chunk.world.name)
+    (chunkPos eq chunk.chunk.chunkKey) and (world eq chunk.chunk.world.uid)
   } > 0
 
   fun getClaimCount(playerUniqueId: UUID): Long = select { PlayerClaimsTable.playerUniqueId eq playerUniqueId }.count()
