@@ -141,18 +141,18 @@ class PureClaims : JavaPlugin() {
             warningBlocks = 0
         }
 
-        runTaskAsynchronously {
-            val newBorder = worldBorder(chunk)
-            val defaultBorder = nmsWorld.worldBorder
-            val nmsPlayer = player.nms
-            nmsPlayer.connection.send(ClientboundInitializeBorderPacket(newBorder))
-            Thread.sleep(333)
+        val newBorder = worldBorder(chunk)
+        val defaultBorder = nmsWorld.worldBorder
+        val nmsPlayer = player.nms
+        nmsPlayer.connection.send(ClientboundInitializeBorderPacket(newBorder))
+        runTaskLater(7) {
             nmsPlayer.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
-            Thread.sleep(333)
+        }
+        runTaskLater(14) {
             nmsPlayer.connection.send(ClientboundInitializeBorderPacket(newBorder))
-            Thread.sleep(333)
+        }
+        runTaskLater(21) {
             nmsPlayer.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
-            Thread.sleep(333)
         }
     }
 
@@ -160,10 +160,14 @@ class PureClaims : JavaPlugin() {
         if (newClaim?.owner == oldClaim?.owner) return
         if (newClaim != null)
             player.sendNullableMessage(
-                settings.enteringClaim?.templateText("owner" to getOfflinePlayer(newClaim.owner)), GAME_INFO)
-        else if (oldClaim != null)
+                settings.enteringClaim?.templateText("owner" to getOfflinePlayer(newClaim.owner)),
+                GAME_INFO
+            )
+        else
             player.sendNullableMessage(
-                settings.exitingClaim?.templateText("owner" to getOfflinePlayer(oldClaim.owner)), GAME_INFO)
+                settings.exitingClaim?.templateText("owner" to getOfflinePlayer(oldClaim!!.owner)),
+                GAME_INFO
+            )
     }
 
     override fun onLoad() {
@@ -203,8 +207,8 @@ class PureClaims : JavaPlugin() {
             val cannotEdit: String? = "{\"text\": \"You don't have permission to edit!\", \"color\": \"red\"}",
             val cannotInteract: String? = "{\"text\": \"You don't have permission to interact!\", \"color\": \"red\"}",
             val cannotDamageMobs: String? = "{\"text\": \"You don't have permission to damage mobs!\", \"color\": \"red\"}",
-            val enteringClaim: String? = "[{\"text\": \"You entered the claim of \", \"color\": \"gray\"}, {\"text\": \"<#if owner??>\${owner.getName()}<#else>Unknown</#if>\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
-            val exitingClaim: String? = "[{\"text\": \"You exiting the claim of \", \"color\": \"gray\"}, {\"text\": \"<#if owner??>\${owner.getName()}<#else>Unknown</#if>\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
+            val enteringClaim: String? = "[{\"text\": \"You entered the claim of \", \"color\": \"gray\"}, {\"text\": \"\${owner.getName()}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
+            val exitingClaim: String? = "[{\"text\": \"You exiting the claim of \", \"color\": \"gray\"}, {\"text\": \"\${owner.getName()}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
             val maxClaims: Int = 10
         )
     }
