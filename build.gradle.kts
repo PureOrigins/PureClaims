@@ -24,7 +24,7 @@ repositories {
 
 dependencies {
     paperDevBundle("1.18.2-R0.1-SNAPSHOT")
-    compileOnly("com.github.PureOrigins:PureCommon:0.3.3")
+    compileOnly("com.github.PureOrigins:PureCommon:0.3.4")
 }
 
 afterEvaluate {
