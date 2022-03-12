@@ -1,10 +1,14 @@
 package it.pureorigins.pureclaims
 
 import it.pureorigins.common.*
+import it.pureorigins.pureclaims.ClaimPermissions.Companion.DAMAGE_MOBS
+import it.pureorigins.pureclaims.ClaimPermissions.Companion.EDIT
+import it.pureorigins.pureclaims.ClaimPermissions.Companion.INTERACT
 import kotlinx.serialization.Serializable
 import net.minecraft.network.chat.ChatType.GAME_INFO
 import net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket
 import net.minecraft.world.level.border.WorldBorder
+import org.bukkit.Bukkit
 import org.bukkit.Bukkit.getOfflinePlayer
 import org.bukkit.Chunk
 import org.bukkit.Location
@@ -48,44 +52,26 @@ class PureClaims : JavaPlugin() {
         PlayerTable.incrementMaxClaims(playerUniqueId, maxClaims)
     }
 
-    fun isLoaded(player: OfflinePlayer): Boolean {
-        return player.uniqueId in permissions
-    }
+    fun isLoaded(player: OfflinePlayer): Boolean = player.uniqueId in permissions
 
-    fun getPermissions(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions {
-        return permissions[player, claim]
-    }
+    fun getPermissions(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions = permissions[player, claim]
 
-    fun isLoaded(chunk: Chunk): Boolean {
-        return chunk in claims
-    }
+    fun isLoaded(chunk: Chunk): Boolean = chunk in claims
 
-    fun isClaimed(chunk: Chunk): Boolean {
-        return claims[chunk] != null
-    }
+    fun isClaimed(chunk: Chunk): Boolean = claims[chunk] != null
 
-    fun isClaimed(location: Location): Boolean {
-        return isClaimed(location.chunk)
-    }
+    fun isClaimed(location: Location): Boolean = isClaimed(location.chunk)
 
-    fun getClaim(chunk: Chunk): ClaimedChunk? {
-        return claims[chunk]
-    }
+    fun getClaim(chunk: Chunk): ClaimedChunk? = claims[chunk]
 
-    fun getClaim(location: Location): ClaimedChunk? {
-        return claims[location.chunk]
-    }
+    fun getClaim(location: Location): ClaimedChunk? = claims[location.chunk]
 
     fun addClaimDatabase(claim: ClaimedChunk) = transaction(database) {
-        if (PlayerClaimsTable.add(claim)) {
-            claims[claim.chunk] = claim
-        }
+        if (PlayerClaimsTable.add(claim)) claims[claim.chunk] = claim
     }
 
     fun removeClaimDatabase(claim: ClaimedChunk) = transaction(database) {
-        if (PlayerClaimsTable.remove(claim)) {
-            claims -= claim.chunk
-        }
+        if (PlayerClaimsTable.remove(claim)) claims -= claim.chunk
     }
 
     fun hasPermissions(
@@ -116,15 +102,9 @@ class PureClaims : JavaPlugin() {
             if (!it && player is Player) {
                 highlightChunk(player, chunk)
                 when (requiredPermissions) {
-                    ClaimPermissions.EDIT -> player.sendNullableMessage(settings.cannotEdit?.templateText(), GAME_INFO)
-                    ClaimPermissions.INTERACT -> player.sendNullableMessage(
-                        settings.cannotInteract?.templateText(),
-                        GAME_INFO
-                    )
-                    ClaimPermissions.DAMAGE_MOBS -> player.sendNullableMessage(
-                        settings.cannotDamageMobs?.templateText(),
-                        GAME_INFO
-                    )
+                    EDIT -> player.sendNullableMessage(settings.cannotEdit?.templateText(), GAME_INFO)
+                    INTERACT -> player.sendNullableMessage(settings.cannotInteract?.templateText(), GAME_INFO)
+                    DAMAGE_MOBS -> player.sendNullableMessage(settings.cannotDamageMobs?.templateText(), GAME_INFO)
                 }
             }
         }
@@ -160,13 +140,11 @@ class PureClaims : JavaPlugin() {
         if (newClaim?.owner == oldClaim?.owner) return
         if (newClaim != null)
             player.sendNullableMessage(
-                settings.enteringClaim?.templateText("owner" to getOfflinePlayer(newClaim.owner)),
-                GAME_INFO
+                settings.enteringClaim?.templateText("owner" to getOfflinePlayer(newClaim.owner)), GAME_INFO
             )
         else
             player.sendNullableMessage(
-                settings.exitingClaim?.templateText("owner" to getOfflinePlayer(oldClaim!!.owner)),
-                GAME_INFO
+                settings.exitingClaim?.templateText("owner" to getOfflinePlayer(oldClaim!!.owner)), GAME_INFO
             )
     }
 
@@ -186,6 +164,9 @@ class PureClaims : JavaPlugin() {
         permissions = Permissions(this)
         registerEvents(Events)
         registerCommand(ClaimCommands(this, commands).command)
+        Bukkit.getWorld("world")?.loadedChunks?.forEach {
+            runTaskAsynchronously { claims[it] = plugin.getClaimedChunkDatabase(it) }
+        }
     }
 
 
