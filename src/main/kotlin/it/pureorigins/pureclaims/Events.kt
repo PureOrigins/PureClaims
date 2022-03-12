@@ -3,13 +3,16 @@ package it.pureorigins.pureclaims
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.DAMAGE_MOBS
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.EDIT
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.INTERACT
-import org.bukkit.Bukkit
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.block.*
+import org.bukkit.event.block.Action.PHYSICAL
+import org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK
 import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerMoveEvent
@@ -22,6 +25,16 @@ object Events : Listener {
     }
 
     @EventHandler
+    fun onBlockExplosion(e: BlockExplodeEvent) {
+        e.blockList().removeIf { !plugin.hasPermissions(e.block, it.chunk, EDIT) }
+    }
+
+    @EventHandler
+    fun onEntityExplosion(e: EntityExplodeEvent) {
+        e.blockList().removeIf { !plugin.hasPermissions(e.entity, it.chunk, EDIT) }
+    }
+
+    @EventHandler
     fun onFireSpread(e: BlockIgniteEvent) {
         if (!plugin.checkPermissions(e.ignitingEntity ?: e.ignitingBlock, e.block.chunk, EDIT)) e.isCancelled = true
     }
@@ -31,10 +44,13 @@ object Events : Listener {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOW)
     fun onInteract(e: PlayerInteractEvent) {
-        if (e.clickedBlock != null && !plugin.checkPermissions(e.player, e.clickedBlock!!.chunk, INTERACT))
-            e.isCancelled = true
+        when(e.action) {
+            RIGHT_CLICK_BLOCK, PHYSICAL ->
+                if (!plugin.checkPermissions(e.player, e.clickedBlock!!.chunk, INTERACT)) e.isCancelled = true
+            else -> {}
+        }
     }
 
     @EventHandler

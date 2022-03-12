@@ -158,17 +158,12 @@ class PureClaims : JavaPlugin() {
 
     fun sendClaimChangeMessage(player: Player, oldClaim: ClaimedChunk?, newClaim: ClaimedChunk?) {
         if (newClaim?.owner == oldClaim?.owner) return
-        if (newClaim != null) {
+        if (newClaim != null)
             player.sendNullableMessage(
-                settings.enteringClaim?.templateText("owner" to getOfflinePlayer(newClaim.owner)),
-                GAME_INFO
-            )
-        } else {
-            player.sendNullableMessage(settings.exitingClaim?.templateText("owner" to oldClaim?.let {
-                getOfflinePlayer(it.owner)
-            }), GAME_INFO)
-        }
-
+                settings.enteringClaim?.templateText("owner" to getOfflinePlayer(newClaim.owner)), GAME_INFO)
+        else if (oldClaim != null)
+            player.sendNullableMessage(
+                settings.exitingClaim?.templateText("owner" to getOfflinePlayer(oldClaim.owner)), GAME_INFO)
     }
 
     override fun onLoad() {
@@ -208,8 +203,8 @@ class PureClaims : JavaPlugin() {
             val cannotEdit: String? = "{\"text\": \"You don't have permission to edit!\", \"color\": \"red\"}",
             val cannotInteract: String? = "{\"text\": \"You don't have permission to interact!\", \"color\": \"red\"}",
             val cannotDamageMobs: String? = "{\"text\": \"You don't have permission to damage mobs!\", \"color\": \"red\"}",
-            val enteringClaim: String? = "[{\"text\": \"You entered the claim of \", \"color\": \"gray\"}, {\"text\": \"<#if owner??>\${owner.name}<#else>Unknown</#if>\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
-            val exitingClaim: String? = "[{\"text\": \"You exiting the claim of \", \"color\": \"gray\"}, {\"text\": \"<#if owner??>\${owner.name}<#else>Unknown</#if>\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
+            val enteringClaim: String? = "[{\"text\": \"You entered the claim of \", \"color\": \"gray\"}, {\"text\": \"<#if owner??>\${owner.getName()}<#else>Unknown</#if>\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
+            val exitingClaim: String? = "[{\"text\": \"You exiting the claim of \", \"color\": \"gray\"}, {\"text\": \"<#if owner??>\${owner.getName()}<#else>Unknown</#if>\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]",
             val maxClaims: Int = 10
         )
     }
