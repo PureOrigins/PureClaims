@@ -5,24 +5,24 @@ import org.bukkit.Chunk
 import org.jetbrains.exposed.sql.*
 import java.util.*
 
-object PlayerClaimsTable : Table("player_claims") {
-  val playerUniqueId = uuid("player_uuid")
+object ClaimsTable : Table("claims") {
+  val ownerUniqueId = uuid("owner_uuid")
   val world = uuid("world_uuid")
   val chunkPos = long("chunk_pos")
 
   override val primaryKey = PrimaryKey(world, chunkPos)
 
-  fun getClaims(playerUniqueId: UUID): List<ClaimedChunk> =
-    select { PlayerClaimsTable.playerUniqueId eq playerUniqueId }
+  fun get(playerUniqueId: UUID): List<ClaimedChunk> =
+    select { ClaimsTable.ownerUniqueId eq playerUniqueId }
       .map { it.toClaimedChunk() }
 
-  fun getClaim(chunk: Chunk): ClaimedChunk? =
+  fun get(chunk: Chunk): ClaimedChunk? =
     select { (world eq chunk.world.uid) and (chunkPos eq chunk.chunkKey) }
       .map { it.toClaimedChunk() }.singleOrNull()
 
 
   fun add(chunk: ClaimedChunk): Boolean = insertIgnore {
-    it[playerUniqueId] = chunk.owner
+    it[ownerUniqueId] = chunk.owner
     it[chunkPos] = chunk.chunk.chunkKey
     it[world] = chunk.chunk.world.uid
   }.insertedCount > 0
@@ -31,7 +31,7 @@ object PlayerClaimsTable : Table("player_claims") {
     (chunkPos eq chunk.chunk.chunkKey) and (world eq chunk.chunk.world.uid)
   } > 0
 
-  fun getClaimCount(playerUniqueId: UUID): Long = select { PlayerClaimsTable.playerUniqueId eq playerUniqueId }.count()
+  fun getCount(playerUniqueId: UUID): Long = select { ClaimsTable.ownerUniqueId eq playerUniqueId }.count()
 }
 
 object PermissionsTable : Table("claim_permissions") {
@@ -42,16 +42,23 @@ object PermissionsTable : Table("claim_permissions") {
   val canDamageMobs = bool("can_damage_mobs")
   override val primaryKey = PrimaryKey(ownerUniqueId, playerUniqueId)
 
-  fun getPermissions(targetId: UUID): MutableMap<UUID, ClaimPermissions> =
-    select { playerUniqueId eq targetId }.associateTo(HashMap()) { it.toClaimPermission() }
+  fun getFromPlayer(playerId: UUID): MutableMap<UUID, ClaimPermissions> =
+    select { playerUniqueId eq playerId }.associateTo(HashMap()) { it.toClaimPermission() }
 
-  fun add(ownerId: UUID, targetId: UUID, permissions: ClaimPermissions): Boolean = insertIgnore {
-    it[playerUniqueId] = targetId
-    it[ownerUniqueId] = ownerId
-    it[canEdit] = permissions.canEdit
-    it[canInteract] = permissions.canInteract
-    it[canDamageMobs] = permissions.canDamageMobs
-  }.insertedCount > 0
+  fun set(ownerId: UUID, targetId: UUID, permissions: ClaimPermissions) {
+    update({ (ownerUniqueId eq ownerId) and (playerUniqueId eq targetId) }) {
+      it[canEdit] = permissions.canEdit
+      it[canInteract] = permissions.canInteract
+      it[canDamageMobs] = permissions.canDamageMobs
+    }
+    insertIgnore {
+      it[playerUniqueId] = targetId
+      it[ownerUniqueId] = ownerId
+      it[canEdit] = permissions.canEdit
+      it[canInteract] = permissions.canInteract
+      it[canDamageMobs] = permissions.canDamageMobs
+    }
+  }
 
   fun remove(ownerId: UUID, targetId: UUID): Boolean = deleteWhere {
     (playerUniqueId eq targetId) and (ownerUniqueId eq ownerId)
@@ -86,9 +93,9 @@ object PlayerTable : Table("players") {
 }
 
 private fun ResultRow.toClaimedChunk() = ClaimedChunk(
-  get(PlayerClaimsTable.playerUniqueId),
-  Bukkit.getWorld(get(PlayerClaimsTable.world))?.getChunkAt(get(PlayerClaimsTable.chunkPos))
-    ?: error("Unknown world '${get(PlayerClaimsTable.world)}'"),
+  get(ClaimsTable.ownerUniqueId),
+  Bukkit.getWorld(get(ClaimsTable.world))?.getChunkAt(get(ClaimsTable.chunkPos))
+    ?: error("Unknown world '${get(ClaimsTable.world)}'"),
 )
 
 private fun ResultRow.toClaimPermission() = get(PermissionsTable.ownerUniqueId) to ClaimPermissions(

@@ -1,7 +1,12 @@
 package it.pureorigins.pureclaims
 
+import com.mojang.brigadier.arguments.StringArgumentType.getString
+import com.mojang.brigadier.arguments.StringArgumentType.greedyString
 import it.pureorigins.common.*
 import kotlinx.serialization.Serializable
+import net.minecraft.commands.arguments.EntityArgument.getPlayer
+import net.minecraft.commands.arguments.EntityArgument.player
+import org.bukkit.Bukkit
 
 class ClaimCommands(private val plugin: PureClaims, private val config: Config) {
   private val PERM_PREFIX = "pureclaims.claim"
@@ -12,6 +17,9 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
     then(addCommand)
     then(removeCommand)
     then(infoCommand)
+    then(viewCommand)
+    then(allowCommand(true))
+    then(allowCommand(false))
   }
 
   private val addCommand get() = literal(config.add.commandName) {
@@ -52,7 +60,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
       }
     }
   }
-
+  
   private val infoCommand get() = literal(config.info.commandName) {
     requiresPermission("$PERM_PREFIX.info")
     success {
@@ -67,6 +75,41 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
       ))
     }
   }
+  
+  private val viewCommand get() = literal(config.view.commandName) {
+    requiresPermission("$PERM_PREFIX.view")
+    success {
+      val player = source.player
+      val claim = plugin.getClaim(player.chunk)
+      player.sendNullableMessage(config.view.message?.templateText("claim" to claim))
+      plugin.highlightChunk(player, player.chunk)
+    }
+  }
+  
+  private fun allowCommand(allow: Boolean) = literal(if (allow) config.allow.allowCommandName else config.allow.denyCommandName) {
+    requiresPermission("$PERM_PREFIX.allow")
+    success { source.sendNullableMessage(config.allow.usage?.templateText("allow" to allow)) }
+    then(argument("player", player()) {
+      if (allow) suggestions { Bukkit.getOnlinePlayers().map { it.name } }
+      else suggestions { Bukkit.getOnlinePlayers().map { it.name } }
+      success { source.sendNullableMessage(config.allow.usage?.templateText("allow" to allow)) }
+      then(argument("permission", greedyString()) {
+        suggestions { listOf("all", "edit", "interact", "damageMobs") }
+        success {
+          val owner = source.player
+          val player = getPlayer(this, "player")
+          val permissions = plugin.getPermissions(player.uuid, owner.uniqueId)
+          when (getString(this, "permission")) {
+            "all" -> plugin.setPermissionsDatabase(owner.uniqueId, player.uuid, if (allow) ClaimPermissions.ALL else ClaimPermissions.NONE)
+            "edit" -> plugin.setPermissionsDatabase(owner.uniqueId, player.uuid, permissions.withCanEdit(allow))
+            "interact" -> plugin.setPermissionsDatabase(owner.uniqueId, player.uuid, permissions.withCanInteract(allow))
+            "damageMobs" -> plugin.setPermissionsDatabase(owner.uniqueId, player.uuid, permissions.withCanDamageMobs(allow))
+            else -> source.sendNullableMessage(config.allow.usage?.templateText("allow" to allow))
+          }
+        }
+      })
+    })
+  }
 
   @Serializable
   data class Config(
@@ -75,7 +118,9 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
     val chunkNotLoaded: String? = "{\"text\": \"this chunk is not loaded yet.\", \"color\": \"dark_gray\"}",
     val add: Add = Add(),
     val remove: Remove = Remove(),
-    val info: Info = Info()
+    val info: Info = Info(),
+    val view: View = View(),
+    val allow: Allow = Allow()
   ) {
     @Serializable
     data class Add(
@@ -99,7 +144,23 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
     data class Info(
       val commandName: String = "info",
       val commandUsage: String? = "[{\"text\": \"Usage: \", \"color\": \"dark_gray\"}, {\"text\": \"/claim info\", \"color\": \"gray\"}]",
-      val success: String? = "{\"text\": \"eeeee.\", \"color\": \"gray\"}"
+      val success: String? = "{\"text\": \"Max claims: \${max}\nUsed claims: \${used}\nRemained claims: \${remained}\", \"color\": \"gray\"}"
+    )
+  
+    @Serializable
+    data class View(
+      val commandName: String = "view",
+      val message: String? = "<#if claim??>[{\"text\": \"Claim of \", \"color\": \"gray\"}, {\"text\": \"\${claim.owner.getName()}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]<#else>{\"text\": \"Unclaimed chunk.\", \"color\": \"gray\"}</#if>"
+    )
+  
+    @Serializable
+    data class Allow(
+      val allowCommandName: String = "allow",
+      val denyCommandName: String = "deny",
+      val usage: String? = "",
+      val invalidPlayer: String? = "",
+      val unknownPermission: String? = "",
+      val message: String? = ""
     )
   }
 }

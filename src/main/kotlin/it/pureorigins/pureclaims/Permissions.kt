@@ -35,9 +35,14 @@ class Permissions(private val plugin: PureClaims, private val permissions: Mutab
   fun onPlayerQuit(event: PlayerQuitEvent) {
     unregister(event.player)
   }
-
+  
   operator fun get(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions {
     return permissions[player.uniqueId]?.get(claim.owner)
       ?: if (claim.owner == player.uniqueId) ClaimPermissions.ALL else ClaimPermissions.NONE
+  }
+  
+  operator fun get(playerUniqueId: UUID, ownerUniqueId: UUID): ClaimPermissions {
+    return permissions[playerUniqueId]?.get(ownerUniqueId)
+      ?: if (ownerUniqueId == playerUniqueId) ClaimPermissions.ALL else ClaimPermissions.NONE
   }
 }

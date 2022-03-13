@@ -29,15 +29,15 @@ class PureClaims : JavaPlugin() {
     private lateinit var settings: Config.Settings
 
     fun getClaimedChunkDatabase(chunk: Chunk): ClaimedChunk? = transaction(database) {
-        PlayerClaimsTable.getClaim(chunk)
+        ClaimsTable.get(chunk)
     }
 
     fun getPermissionsDatabase(uuid: UUID): MutableMap<UUID, ClaimPermissions> = transaction(database) {
-        PermissionsTable.getPermissions(uuid)
+        PermissionsTable.getFromPlayer(uuid)
     }
 
     fun getClaimCountDatabase(playerUniqueId: UUID): Int = transaction(database) {
-        PlayerClaimsTable.getClaimCount(playerUniqueId)
+        ClaimsTable.getCount(playerUniqueId)
     }.toInt()
 
     fun getMaxClaimsDatabase(playerUniqueId: UUID): Int = transaction(database) {
@@ -53,8 +53,12 @@ class PureClaims : JavaPlugin() {
     }
 
     fun isLoaded(player: OfflinePlayer): Boolean = player.uniqueId in permissions
-
-    fun getPermissions(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions = permissions[player, claim]
+    
+    fun getPermissions(playerUniqueId: UUID, ownerUniqueId: UUID): ClaimPermissions = permissions[playerUniqueId, ownerUniqueId]
+    
+    fun setPermissionsDatabase(ownerUUID: UUID, playerUUID: UUID, permissions: ClaimPermissions) = transaction(database) {
+        PermissionsTable.set(ownerUUID, playerUUID, permissions)
+    }
 
     fun isLoaded(chunk: Chunk): Boolean = chunk in claims
 
@@ -67,11 +71,11 @@ class PureClaims : JavaPlugin() {
     fun getClaim(location: Location): ClaimedChunk? = claims[location.chunk]
 
     fun addClaimDatabase(claim: ClaimedChunk) = transaction(database) {
-        if (PlayerClaimsTable.add(claim)) claims[claim.chunk] = claim
+        if (ClaimsTable.add(claim)) claims[claim.chunk] = claim
     }
 
     fun removeClaimDatabase(claim: ClaimedChunk) = transaction(database) {
-        if (PlayerClaimsTable.remove(claim)) claims -= claim.chunk
+        if (ClaimsTable.remove(claim)) claims -= claim.chunk
     }
 
     fun hasPermissions(
@@ -82,7 +86,7 @@ class PureClaims : JavaPlugin() {
         if (!isLoaded(player) || !isLoaded(chunk)) return false
 
         val claim = claims[chunk] ?: return true
-        val permissions = getPermissions(player, claim)
+        val permissions = getPermissions(player.uniqueId, claim.owner)
         return permissions.requiredPermissions()
     }
 
@@ -158,7 +162,7 @@ class PureClaims : JavaPlugin() {
         this.settings = settings
         database = Database.connect(db.url, user = db.username, password = db.password)
         transaction(database) {
-            SchemaUtils.createMissingTablesAndColumns(PlayerClaimsTable, PermissionsTable, PlayerTable)
+            SchemaUtils.createMissingTablesAndColumns(ClaimsTable, PermissionsTable, PlayerTable)
         }
         claims = Claims(this)
         permissions = Permissions(this)
