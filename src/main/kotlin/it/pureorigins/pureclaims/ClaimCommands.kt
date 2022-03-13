@@ -26,8 +26,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
     requiresPermission("$PERM_PREFIX.add")
     success {
       val player = source.player
-      val chunk = player.chunk
-      if (!plugin.isLoaded(chunk) || !plugin.isLoaded(player)) return@success source.sendNullableMessage(config.chunkNotLoaded?.templateText())
+      if (!plugin.isLoaded(player.chunk) || !plugin.isLoaded(player)) return@success source.sendNullableMessage(config.chunkNotLoaded?.templateText())
       when {
         plugin.isClaimed(player.chunk) ->
           source.sendNullableMessage(config.add.alreadyClaimed?.templateText())
@@ -46,8 +45,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
     requiresPermission("$PERM_PREFIX.remove")
     success {
       val player = source.player
-      val chunk = player.chunk
-      if (!plugin.isLoaded(chunk) || !plugin.isLoaded(player)) return@success source.sendNullableMessage(config.chunkNotLoaded?.templateText())
+      if (!plugin.isLoaded(player.chunk) || !plugin.isLoaded(player)) return@success source.sendNullableMessage(config.chunkNotLoaded?.templateText())
       when {
         !plugin.isClaimed(player.chunk) ->
           source.sendNullableMessage(config.remove.notClaimed?.templateText())
