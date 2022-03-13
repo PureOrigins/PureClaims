@@ -16,7 +16,7 @@ import org.bukkit.OfflinePlayer
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.SchemaUtils.createMissingTablesAndColumns
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
@@ -157,19 +157,13 @@ class PureClaims : JavaPlugin() {
         require(db.url.isNotEmpty()) { "Database url is empty" }
         this.settings = settings
         database = Database.connect(db.url, user = db.username, password = db.password)
-        transaction(database) {
-            SchemaUtils.createMissingTablesAndColumns(PlayerClaimsTable, PermissionsTable, PlayerTable)
-        }
+        transaction(database) { createMissingTablesAndColumns(PlayerClaimsTable, PermissionsTable, PlayerTable) }
         claims = Claims(this)
         permissions = Permissions(this)
         registerEvents(Events)
         registerCommand(ClaimCommands(this, commands).command)
-        Bukkit.getWorlds().forEach { world ->
-            world.loadedChunks.forEach { claims.register(it) }
-        }
-        Bukkit.getOnlinePlayers().forEach {
-            permissions.register(it)
-        }
+        Bukkit.getWorlds().forEach { it.loadedChunks.forEach(claims::register) }
+        Bukkit.getOnlinePlayers().forEach(permissions::register)
     }
 
 

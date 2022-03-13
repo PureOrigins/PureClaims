@@ -16,15 +16,15 @@ object PlayerClaimsTable : Table("player_claims") {
     select { PlayerClaimsTable.playerUniqueId eq playerUniqueId }
       .map { it.toClaimedChunk() }
 
-  fun getClaim(chunk: Chunk): ClaimedChunk? =
-    select { (world eq chunk.world.uid) and (chunkPos eq chunk.chunkKey) }
+  fun getClaim(claim: Chunk): ClaimedChunk? =
+    select { (world eq claim.world.uid) and (chunkPos eq claim.chunkKey) }
       .map { it.toClaimedChunk() }.singleOrNull()
 
 
-  fun add(chunk: ClaimedChunk): Boolean = insertIgnore {
-    it[playerUniqueId] = chunk.owner
-    it[chunkPos] = chunk.chunk.chunkKey
-    it[world] = chunk.chunk.world.uid
+  fun add(claim: ClaimedChunk): Boolean = insertIgnore {
+    it[playerUniqueId] = claim.owner
+    it[chunkPos] = claim.chunk.chunkKey
+    it[world] = claim.chunk.world.uid
   }.insertedCount > 0
 
   fun remove(chunk: ClaimedChunk): Boolean = deleteWhere {
