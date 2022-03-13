@@ -97,12 +97,12 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
           val owner = source.player
           val player = getPlayer(this, "player")
           val permissions = plugin.getPermissions(player.uuid, owner.uniqueId)
-          when (getString(this, "permission")) {
+          when (val permission = getString(this, "permission")) {
             "all" -> plugin.setPermissionsDatabase(owner.uniqueId, player.uuid, if (allow) ClaimPermissions.ALL else ClaimPermissions.NONE)
             "edit" -> plugin.setPermissionsDatabase(owner.uniqueId, player.uuid, permissions.withCanEdit(allow))
             "interact" -> plugin.setPermissionsDatabase(owner.uniqueId, player.uuid, permissions.withCanInteract(allow))
             "damageMobs" -> plugin.setPermissionsDatabase(owner.uniqueId, player.uuid, permissions.withCanDamageMobs(allow))
-            else -> source.sendNullableMessage(config.allow.usage?.templateText("allow" to allow))
+            else -> source.sendNullableMessage(config.allow.unknownPermission?.templateText("allow" to allow, "permission" to permission))
           }
         }
       })
@@ -156,7 +156,6 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
       val allowCommandName: String = "allow",
       val denyCommandName: String = "deny",
       val usage: String? = "",
-      val invalidPlayer: String? = "",
       val unknownPermission: String? = "",
       val message: String? = ""
     )
