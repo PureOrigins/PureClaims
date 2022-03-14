@@ -5,7 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType.greedyString
 import it.pureorigins.common.*
 import kotlinx.serialization.Serializable
 import net.kyori.adventure.text.event.ClickEvent
-import net.kyori.adventure.text.format.TextColor
+import net.kyori.adventure.text.format.TextColor.fromHexString
 import net.minecraft.commands.arguments.EntityArgument.getPlayer
 import net.minecraft.commands.arguments.EntityArgument.player
 import org.bukkit.Bukkit
@@ -157,18 +157,28 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                     if (claim?.owner == player.uniqueId) {
                         val perms = plugin.getPermissions(target.uuid, player.uniqueId)
 
-                        //TODO
-                        val canEditString = "EDIT".toPaperText()
-                        val colored = if (perms.canEdit) canEditString.color(TextColor.fromHexString("#00FF00"))
-                        else canEditString.color(TextColor.fromHexString("#FF0000"))
-                        val action = if (perms.canEdit) "allow" else "deny"
-                        val clickable = colored.clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/claim $action ${target.name} edit"))
+                        fun clickablePermission(perm: String, bool: Boolean): PaperText =
+                            perm.toPaperText().color(
+                                if (bool) fromHexString("#00FF00")
+                                else fromHexString("#FF0000")
+                            ).clickEvent(
+                                ClickEvent.clickEvent(
+                                    ClickEvent.Action.RUN_COMMAND,
+                                    "/claim ${if (bool) "allow" else "deny"} ${target.name} $perm"
+                                )
+                            )
+
+                        val permissions = listOf(
+                            clickablePermission("edit", perms.canEdit),
+                            clickablePermission("interact", perms.canInteract),
+                            clickablePermission("damageMobs", perms.canDamageMobs)
+                        )
 
 
                         player.sendNullableMessage(
                             config.permissions.success?.templateText(
                                 "player" to target,
-                                "permissions" to perms
+                                "permissions" to permissions.joinToString("\t")
                             )
                         )
                     } else {
@@ -236,8 +246,6 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             val usage: String? = "[{\"text\": \"Usage: \", \"color\": \"dark_gray\"}, {\"text\": \"/claim permissions [player]\", \"color\": \"gray\"}]",
             val success: String? = "{\"text\": \"Permissions for \${player}: \n\${permissions}, \"color\": \"gray\"}",
             val notOwner: String? = "{\"text\": \"You are not the owner of this claim.\", \"color\": \"red\"}"
-        ) {
-
-        }
+        )
     }
 }
