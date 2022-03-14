@@ -168,12 +168,8 @@ class PureClaims : JavaPlugin() {
         permissions = Permissions(this)
         registerEvents(Events)
         registerCommand(ClaimCommands(this, commands).command)
-        Bukkit.getWorlds().forEach { world ->
-            world.loadedChunks.forEach { claims.register(it) }
-        }
-        Bukkit.getOnlinePlayers().forEach {
-            permissions.register(it)
-        }
+        Bukkit.getWorlds().forEach { it.loadedChunks.forEach(claims::register) }
+        Bukkit.getOnlinePlayers().forEach(permissions::register)
     }
 
 
