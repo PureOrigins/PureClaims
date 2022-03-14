@@ -12,7 +12,7 @@ import org.bukkit.Bukkit
 
 class ClaimCommands(private val plugin: PureClaims, private val config: Config) {
     private val PERM_PREFIX = "pureclaims.claim"
-
+    
     val command
         get() = literal(config.commandName) {
             requiresPermission(PERM_PREFIX)
@@ -24,7 +24,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             then(allowCommand(true))
             then(allowCommand(false))
         }
-
+    
     private val addCommand
         get() = literal(config.add.commandName) {
             requiresPermission("$PERM_PREFIX.add")
@@ -46,7 +46,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                 }
             }
         }
-
+    
     private val removeCommand
         get() = literal(config.remove.commandName) {
             requiresPermission("$PERM_PREFIX.remove")
@@ -67,7 +67,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                 }
             }
         }
-
+    
     private val infoCommand
         get() = literal(config.info.commandName) {
             requiresPermission("$PERM_PREFIX.info")
@@ -85,7 +85,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                 )
             }
         }
-
+    
     private val viewCommand
         get() = literal(config.view.commandName) {
             requiresPermission("$PERM_PREFIX.view")
@@ -96,7 +96,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                 plugin.highlightChunk(player, player.chunk)
             }
         }
-
+    
     private fun allowCommand(allow: Boolean) =
         literal(if (allow) config.allow.allowCommandName else config.allow.denyCommandName) {
             requiresPermission("$PERM_PREFIX.allow")
@@ -143,7 +143,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                 })
             })
         }
-
+    
     //TODO to be finished
     private val permissionsCommand
         get() = literal(config.permissions.commandName) {
@@ -156,7 +156,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                     val claim = plugin.getClaim(player.chunk)
                     if (claim?.owner == player.uniqueId) {
                         val perms = plugin.getPermissions(target.uuid, player.uniqueId)
-
+                        
                         fun clickablePermission(perm: String, bool: Boolean): PaperText =
                             perm.toPaperText().color(
                                 if (bool) fromHexString("#00FF00")
@@ -167,14 +167,14 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                                     "/claim ${if (bool) "allow" else "deny"} ${target.name} $perm"
                                 )
                             )
-
+                        
                         val permissions = listOf(
                             clickablePermission("edit", perms.canEdit),
                             clickablePermission("interact", perms.canInteract),
                             clickablePermission("damageMobs", perms.canDamageMobs)
                         )
-
-
+                        
+                        
                         player.sendNullableMessage(
                             config.permissions.success?.templateText(
                                 "player" to target,
@@ -187,7 +187,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                 }
             })
         }
-
+    
     @Serializable
     data class Config(
         val commandName: String = "claim",
@@ -208,7 +208,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             val alreadyClaimed: String? = "{\"text\": \"this land have already been claimed by another player.\", \"color\": \"dark_gray\"}",
             val success: String? = "{\"text\": \"chunk claimed.\", \"color\": \"gray\"}"
         )
-
+        
         @Serializable
         data class Remove(
             val commandName: String = "remove",
@@ -217,20 +217,20 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             val claimedByAnotherPlayer: String? = "{\"text\": \"this land is not claimed by you\", \"color\": \"dark_gray\"}",
             val success: String? = "{\"text\": \"chunk unclaimed.\", \"color\": \"gray\"}"
         )
-
+        
         @Serializable
         data class Info(
             val commandName: String = "info",
             val commandUsage: String? = "[{\"text\": \"Usage: \", \"color\": \"dark_gray\"}, {\"text\": \"/claim info\", \"color\": \"gray\"}]",
             val success: String? = "{\"text\": \"Max claims: \${max}\nUsed claims: \${used}\nRemained claims: \${remained}\", \"color\": \"gray\"}"
         )
-
+        
         @Serializable
         data class View(
             val commandName: String = "view",
             val message: String? = "<#if claim??>[{\"text\": \"Claim of \", \"color\": \"gray\"}, {\"text\": \"\${claim.owner.getName()}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]<#else>{\"text\": \"Unclaimed chunk.\", \"color\": \"gray\"}</#if>"
         )
-
+        
         @Serializable
         data class Allow(
             val allowCommandName: String = "allow",
@@ -239,7 +239,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             val unknownPermission: String? = "",
             val message: String? = ""
         )
-
+        
         @Serializable
         data class Permissions(
             val commandName: String = "permissions",

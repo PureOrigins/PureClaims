@@ -18,7 +18,6 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerMoveEvent
 
 object Events : Listener {
-
     @EventHandler
     fun onBreakBlock(e: BlockBreakEvent) {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
