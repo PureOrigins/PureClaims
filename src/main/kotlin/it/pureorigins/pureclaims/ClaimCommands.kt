@@ -1,12 +1,16 @@
 package it.pureorigins.pureclaims
 
+import com.mojang.authlib.GameProfile
 import com.mojang.brigadier.arguments.StringArgumentType.getString
 import com.mojang.brigadier.arguments.StringArgumentType.greedyString
+import com.mojang.brigadier.context.CommandContext
 import it.pureorigins.common.*
 import kotlinx.serialization.Serializable
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.commands.arguments.GameProfileArgument.gameProfile
 import net.minecraft.commands.arguments.GameProfileArgument.getGameProfiles
+import org.bukkit.Bukkit.getOnlinePlayers
 
 class ClaimCommands(private val plugin: PureClaims, private val config: Config) {
     private val PERM_PREFIX = "pureclaims.claim"
@@ -99,6 +103,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             requiresPermission("$PERM_PREFIX.allow")
             success { source.sendNullableMessage(config.allow.usage?.templateText("allow" to allow)) }
             then(argument("player", gameProfile()) {
+                suggestions { getOnlinePlayers().map { it.name } }
                 success { source.sendNullableMessage(config.allow.usage?.templateText("allow" to allow)) }
                 then(argument("permission", greedyString()) {
                     suggestions { listOf("all", "edit", "interact", "damageMobs") }
@@ -134,10 +139,10 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             requiresPermission("$PERM_PREFIX.permissions")
             success { source.sendNullableMessage(config.permissions.usage?.templateText()) }
             then(argument("player", gameProfile()) {
+                suggestions { getOnlinePlayers().map { it.name } }
                 success {
                     val player = source.player
-                    val target = getGameProfiles(this, "player").singleOrNull()
-                        ?: throw EntityArgument.ERROR_NOT_SINGLE_PLAYER.create()
+                    val target = getGameProfile(this, "player")
                     val permissions = plugin.getPermissions(target.id, player.uniqueId)
                     player.sendNullableMessage(
                         config.permissions.message?.templateText(
@@ -148,6 +153,11 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                 }
             })
         }
+    
+    private fun getGameProfile(context: CommandContext<CommandSourceStack>, name: String): GameProfile {
+        val profiles = getGameProfiles(context, name)
+        return profiles.singleOrNull() ?: throw EntityArgument.ERROR_NOT_SINGLE_PLAYER.create()
+    }
     
     @Serializable
     data class Config(
