@@ -60,9 +60,9 @@ object Events : Listener {
     @EventHandler
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
         if (e.entity !is Player)
-            if (e.entity is LivingEntity && !plugin.checkPermissions(e.damager, e.entity.chunk, DAMAGE_MOBS))
-                e.isCancelled = true
-            else if (!plugin.checkPermissions(e.damager, e.entity.chunk, INTERACT)) e.isCancelled = true
+            if (e.entity is LivingEntity) {
+                if (!plugin.checkPermissions(e.damager, e.entity.chunk, DAMAGE_MOBS)) e.isCancelled = true
+            } else if (!plugin.checkPermissions(e.damager, e.entity.chunk, INTERACT)) e.isCancelled = true
     }
 
     @EventHandler
