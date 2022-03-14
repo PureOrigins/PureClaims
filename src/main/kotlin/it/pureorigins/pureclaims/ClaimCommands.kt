@@ -10,6 +10,8 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.commands.arguments.GameProfileArgument.gameProfile
 import net.minecraft.commands.arguments.GameProfileArgument.getGameProfiles
+import net.minecraft.network.chat.ChatType
+import org.bukkit.Bukkit.getOfflinePlayer
 import org.bukkit.Bukkit.getOnlinePlayers
 
 class ClaimCommands(private val plugin: PureClaims, private val config: Config) {
@@ -93,7 +95,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             success {
                 val player = source.player
                 val claim = plugin.getClaim(player.chunk)
-                player.sendNullableMessage(config.view.message?.templateText("claim" to claim))
+                player.sendNullableMessage(config.view.message?.templateText("claim" to claim, "owner" to claim?.let { getOfflinePlayer(it.owner) }), position = ChatType.GAME_INFO)
                 plugin.highlightChunk(player, player.chunk)
             }
         }
@@ -195,7 +197,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
         @Serializable
         data class View(
             val commandName: String = "view",
-            val message: String? = "<#if claim??>[{\"text\": \"Claim of \", \"color\": \"gray\"}, {\"text\": \"\${claim.owner.getName()}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]<#else>{\"text\": \"Unclaimed chunk.\", \"color\": \"gray\"}</#if>"
+            val message: String? = "<#if owner??>[{\"text\": \"Claim of \", \"color\": \"gray\"}, {\"text\": \"\${owner.getName()}\", \"color\": \"gold\"}, {\"text\": \".\", \"color\": \"gray\"}]<#else>{\"text\": \"Unclaimed chunk.\", \"color\": \"gray\"}</#if>"
         )
         
         @Serializable
