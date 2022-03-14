@@ -43,7 +43,10 @@ object PermissionsTable : Table("claim_permissions") {
     override val primaryKey = PrimaryKey(ownerUniqueId, playerUniqueId)
     
     fun getFromPlayer(playerId: UUID): MutableMap<UUID, ClaimPermissions> =
-        select { playerUniqueId eq playerId }.associateTo(HashMap()) { it.toClaimPermission() }
+        select { playerUniqueId eq playerId }.associateTo(HashMap()) { it.toOwnerClaimPermission() }
+    
+    fun getFromOwner(ownerId: UUID): MutableMap<UUID, ClaimPermissions> =
+        select { ownerUniqueId eq ownerId }.associateTo(HashMap()) { it.toPlayerClaimPermission() }
     
     fun set(ownerId: UUID, targetId: UUID, permissions: ClaimPermissions) {
         update({ (ownerUniqueId eq ownerId) and (playerUniqueId eq targetId) }) {
@@ -101,7 +104,13 @@ private fun ResultRow.toClaimedChunk() = ClaimedChunk(
         ?: error("Unknown world '${get(ClaimsTable.world)}'"),
 )
 
-private fun ResultRow.toClaimPermission() = get(PermissionsTable.ownerUniqueId) to ClaimPermissions(
+private fun ResultRow.toOwnerClaimPermission() = get(PermissionsTable.ownerUniqueId) to ClaimPermissions(
+    get(PermissionsTable.canEdit),
+    get(PermissionsTable.canInteract),
+    get(PermissionsTable.canDamageMobs)
+)
+
+private fun ResultRow.toPlayerClaimPermission() = get(PermissionsTable.playerUniqueId) to ClaimPermissions(
     get(PermissionsTable.canEdit),
     get(PermissionsTable.canInteract),
     get(PermissionsTable.canDamageMobs)

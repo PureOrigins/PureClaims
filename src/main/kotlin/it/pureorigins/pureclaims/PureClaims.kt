@@ -31,9 +31,13 @@ class PureClaims : JavaPlugin() {
     fun getClaimedChunkDatabase(chunk: Chunk): ClaimedChunk? = transaction(database) {
         ClaimsTable.get(chunk)
     }
-
-    fun getPermissionsDatabase(uuid: UUID): MutableMap<UUID, ClaimPermissions> = transaction(database) {
-        PermissionsTable.getFromPlayer(uuid)
+    
+    fun getPermissionsFromPlayerDatabase(playerUniqueId: UUID): MutableMap<UUID, ClaimPermissions> = transaction(database) {
+        PermissionsTable.getFromPlayer(playerUniqueId)
+    }
+    
+    fun getPermissionsFromOwnerDatabase(ownerUniqueId: UUID): MutableMap<UUID, ClaimPermissions> = transaction(database) {
+        PermissionsTable.getFromOwner(ownerUniqueId)
     }
 
     fun getClaimCountDatabase(playerUniqueId: UUID): Int = transaction(database) {
@@ -58,6 +62,7 @@ class PureClaims : JavaPlugin() {
     
     fun setPermissionsDatabase(ownerUUID: UUID, playerUUID: UUID, permissions: ClaimPermissions) = transaction(database) {
         PermissionsTable.set(ownerUUID, playerUUID, permissions)
+        this@PureClaims.permissions[playerUUID, ownerUUID] = permissions
     }
 
     fun isLoaded(chunk: Chunk): Boolean = chunk in claims

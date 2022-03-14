@@ -21,7 +21,7 @@ class Permissions(
     fun register(player: Player) {
         val uuid = player.uniqueId
         plugin.runTaskAsynchronously {
-            this.permissions[uuid] = plugin.getPermissionsDatabase(uuid)
+            this.permissions[uuid] = plugin.getPermissionsFromPlayerDatabase(uuid)
         }
     }
     
@@ -39,13 +39,12 @@ class Permissions(
         unregister(event.player)
     }
     
-    operator fun get(player: OfflinePlayer, claim: ClaimedChunk): ClaimPermissions {
-        return permissions[player.uniqueId]?.get(claim.owner)
-            ?: if (claim.owner == player.uniqueId) ClaimPermissions.ALL else ClaimPermissions.NONE
-    }
-    
     operator fun get(playerUniqueId: UUID, ownerUniqueId: UUID): ClaimPermissions {
         return permissions[playerUniqueId]?.get(ownerUniqueId)
             ?: if (ownerUniqueId == playerUniqueId) ClaimPermissions.ALL else ClaimPermissions.NONE
+    }
+    
+    operator fun set(playerUniqueId: UUID, ownerUniqueId: UUID, value: ClaimPermissions) {
+        permissions[playerUniqueId]?.set(ownerUniqueId, value)
     }
 }
