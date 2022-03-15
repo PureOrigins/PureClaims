@@ -76,6 +76,7 @@ object Events : Listener {
     @EventHandler
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
         if (e.entity !is Player)
+            //TODO (BUGFIX): ArmorStand is also a LivingEntity
             if (e.entity is LivingEntity) {
                 if (!plugin.checkPermissions(e.damager, e.entity.chunk, DAMAGE_MOBS)) e.isCancelled = true
             } else if (!plugin.checkPermissions(e.damager, e.entity.chunk, EDIT)) e.isCancelled = true
