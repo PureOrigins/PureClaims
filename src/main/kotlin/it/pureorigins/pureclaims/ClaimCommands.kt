@@ -39,14 +39,17 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
                     config.chunkNotLoaded?.templateText()
                 )
                 when {
-                    plugin.isClaimed(player.chunk) ->
+                    plugin.isClaimed(player.chunk) -> {
                         source.sendNullableMessage(config.add.alreadyClaimed?.templateText())
+                        plugin.highlightChunk(player, player.chunk)
+                    }
                     // TODO remove comment, this is for testing
                     // PureClaims.getClaimCount(player.uuid) >= PureClaims.getMaxClaims(player.uuid) ->
                     //     source.sendNullableMessage(config.add.noClaimSlotsAvailable?.templateText())
                     else -> {
                         plugin.addClaimDatabase(ClaimedChunk(player.uniqueId, player.chunk))
                         source.sendNullableMessage(config.add.success?.templateText())
+                        plugin.highlightChunk(player, player.chunk)
                     }
                 }
             }
@@ -57,15 +60,17 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             requiresPermission("$PERM_PREFIX.remove")
             success {
                 val player = source.player
-                if (!plugin.isLoaded(player.chunk) || !plugin.isLoaded(player)) return@success source.sendNullableMessage(
-                    config.chunkNotLoaded?.templateText()
-                )
+                if (!plugin.isLoaded(player.chunk) || !plugin.isLoaded(player))
+                    return@success source.sendNullableMessage(config.chunkNotLoaded?.templateText())
                 when {
-                    plugin.getClaim(player.chunk)?.owner != player.uniqueId ->
+                    plugin.getClaim(player.chunk)?.owner != player.uniqueId -> {
                         source.sendNullableMessage(config.remove.notClaimed?.templateText())
+                        plugin.highlightChunk(player, player.chunk)
+                    }
                     else -> {
                         plugin.removeClaimDatabase(plugin.getClaim(player.chunk)!!)
-                        source.sendNullableMessage(config.add.success?.templateText())
+                        source.sendNullableMessage(config.remove.success?.templateText())
+                        plugin.highlightChunk(player, player.chunk)
                     }
                 }
             }
@@ -178,7 +183,7 @@ class ClaimCommands(private val plugin: PureClaims, private val config: Config) 
             val commandName: String = "add",
             val noClaimSlotsAvailable: String? = "{\"text\": \"You have reached the max claim slots.\", \"color\": \"dark_gray\"}",
             val alreadyClaimed: String? = "{\"text\": \"This land have already been claimed by another player.\", \"color\": \"dark_gray\"}",
-            val success: String? = "{\"text\": \"chunk claimed.\", \"color\": \"gray\"}"
+            val success: String? = "{\"text\": \"Chunk claimed.\", \"color\": \"gray\"}"
         )
         
         @Serializable
