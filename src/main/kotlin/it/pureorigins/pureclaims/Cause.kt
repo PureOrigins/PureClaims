@@ -1,6 +1,5 @@
 package it.pureorigins.pureclaims
 
-import net.minecraft.world.entity.item.PrimedTnt
 import org.bukkit.Bukkit
 import org.bukkit.Chunk
 import org.bukkit.Location
@@ -10,6 +9,7 @@ import org.bukkit.entity.Item
 import org.bukkit.entity.Mob
 import org.bukkit.entity.Player
 import org.bukkit.entity.Projectile
+import org.bukkit.entity.TNTPrimed
 import org.bukkit.projectiles.BlockProjectileSource
 
 sealed interface Cause
@@ -27,7 +27,7 @@ fun inferCause(obj: Any?, maxDepth: Int = 5): Cause? {
         is BlockProjectileSource -> inferCause(obj.block, maxDepth - 1)
         is Projectile -> inferCause(obj.shooter, maxDepth - 1)
         is Item -> inferCause(obj.owner?.let { Bukkit.getOfflinePlayer(it) }, maxDepth - 1)
-        is PrimedTnt -> inferCause(obj.owner, maxDepth - 1)
+        is TNTPrimed -> inferCause(obj.source, maxDepth - 1)
         is Mob -> inferCause(obj.target, maxDepth - 1)
         else -> null
     }

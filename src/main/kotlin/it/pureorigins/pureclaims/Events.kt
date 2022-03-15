@@ -3,10 +3,10 @@ package it.pureorigins.pureclaims
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.DAMAGE_MOBS
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.EDIT
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.INTERACT
+import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
-import org.bukkit.event.EventPriority
 import org.bukkit.event.EventPriority.*
 import org.bukkit.event.Listener
 import org.bukkit.event.block.*
@@ -26,7 +26,6 @@ object Events : Listener {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
-    //TODO (BUGFIX): working also in unclaimed chunks
     @EventHandler
     fun onBlockExplosion(e: BlockExplodeEvent) {
         e.blockList().removeIf { !plugin.hasPermissions(e.block, it.chunk, EDIT) }
@@ -75,9 +74,9 @@ object Events : Listener {
 
     @EventHandler
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
-        if (e.entity !is Player)
-            //TODO (BUGFIX): ArmorStand is also a LivingEntity
-            if (e.entity is LivingEntity) {
+        val entity = e.entity
+        if (entity !is Player)
+            if (entity is LivingEntity && entity !is ArmorStand) {
                 if (!plugin.checkPermissions(e.damager, e.entity.chunk, DAMAGE_MOBS)) e.isCancelled = true
             } else if (!plugin.checkPermissions(e.damager, e.entity.chunk, EDIT)) e.isCancelled = true
     }

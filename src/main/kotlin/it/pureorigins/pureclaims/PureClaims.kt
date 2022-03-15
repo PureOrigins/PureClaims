@@ -80,7 +80,7 @@ class PureClaims : JavaPlugin() {
     }
 
     fun removeClaimDatabase(claim: ClaimedChunk) = transaction(database) {
-        if (ClaimsTable.remove(claim)) claims -= claim.chunk
+        if (ClaimsTable.remove(claim)) claims[claim.chunk] = null
     }
 
     fun hasPermissions(
