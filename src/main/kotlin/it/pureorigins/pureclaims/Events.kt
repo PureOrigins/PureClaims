@@ -12,6 +12,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.*
 import org.bukkit.event.block.Action.PHYSICAL
 import org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK
+import org.bukkit.event.entity.EntityChangeBlockEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.hanging.HangingBreakByEntityEvent
@@ -46,7 +47,7 @@ object Events : Listener {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
-    @EventHandler(priority = HIGH)
+    @EventHandler(priority = HIGH, ignoreCancelled = true)
     fun onInteract(e: PlayerInteractEvent) {
         when(e.action) {
             RIGHT_CLICK_BLOCK, PHYSICAL ->
@@ -79,6 +80,11 @@ object Events : Listener {
             if (entity is LivingEntity && entity !is ArmorStand) {
                 if (!plugin.checkPermissions(e.damager, e.entity.chunk, DAMAGE_MOBS)) e.isCancelled = true
             } else if (!plugin.checkPermissions(e.damager, e.entity.chunk, EDIT)) e.isCancelled = true
+    }
+
+    @EventHandler
+    fun onEntityDestroyBlock(e: EntityChangeBlockEvent) {
+        if (!plugin.checkPermissions(e.entity, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
     @EventHandler
