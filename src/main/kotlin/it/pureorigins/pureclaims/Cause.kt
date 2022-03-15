@@ -27,7 +27,7 @@ fun inferCause(obj: Any?, maxDepth: Int = 5): Cause? {
         is BlockProjectileSource -> inferCause(obj.block, maxDepth - 1)
         is Projectile -> inferCause(obj.shooter, maxDepth - 1)
         is Item -> inferCause(obj.owner?.let { Bukkit.getOfflinePlayer(it) }, maxDepth - 1)
-        is TNTPrimed -> inferCause(obj.source, maxDepth - 1)
+        is TNTPrimed -> inferCause(obj.source ?: obj.origin, maxDepth - 1)
         is Mob -> inferCause(obj.target, maxDepth - 1)
         else -> null
     }
