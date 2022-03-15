@@ -7,12 +7,15 @@ import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
+import org.bukkit.event.EventPriority.*
 import org.bukkit.event.Listener
 import org.bukkit.event.block.*
 import org.bukkit.event.block.Action.PHYSICAL
 import org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityExplodeEvent
+import org.bukkit.event.hanging.HangingBreakByEntityEvent
+import org.bukkit.event.hanging.HangingPlaceEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerMoveEvent
@@ -23,6 +26,7 @@ object Events : Listener {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
+    //TODO (BUGFIX): working also in unclaimed chunks
     @EventHandler
     fun onBlockExplosion(e: BlockExplodeEvent) {
         e.blockList().removeIf { !plugin.hasPermissions(e.block, it.chunk, EDIT) }
@@ -43,7 +47,7 @@ object Events : Listener {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = HIGH)
     fun onInteract(e: PlayerInteractEvent) {
         when(e.action) {
             RIGHT_CLICK_BLOCK, PHYSICAL ->
@@ -58,11 +62,23 @@ object Events : Listener {
     }
 
     @EventHandler
+    fun onHangingBreak(e: HangingBreakByEntityEvent) {
+        if (e.entity is Player) {
+            if (!plugin.checkPermissions(e.entity, e.entity.chunk, EDIT)) e.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onHangingPlace(e: HangingPlaceEvent) {
+        if (!plugin.checkPermissions(e.player, e.entity.chunk, EDIT)) e.isCancelled = true
+    }
+
+    @EventHandler
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
         if (e.entity !is Player)
             if (e.entity is LivingEntity) {
                 if (!plugin.checkPermissions(e.damager, e.entity.chunk, DAMAGE_MOBS)) e.isCancelled = true
-            } else if (!plugin.checkPermissions(e.damager, e.entity.chunk, INTERACT)) e.isCancelled = true
+            } else if (!plugin.checkPermissions(e.damager, e.entity.chunk, EDIT)) e.isCancelled = true
     }
 
     @EventHandler
