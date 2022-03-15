@@ -33,20 +33,22 @@ fun inferCause(obj: Any?, maxDepth: Int = 5): Cause? {
     }
 }
 
-fun PureClaims.hasPermissions(cause: Cause, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean = when(cause) {
+fun PureClaims.hasPermissions(cause: Cause?, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean = when(cause) {
     is PlayerCause -> hasPermissions(cause.player, chunk, requiredPermissions)
     is ChunkCause -> hasPermissions(cause.chunk, chunk)
+    null -> isLoaded(chunk) && !isClaimed(chunk)
 }
 
 fun PureClaims.hasPermissions(cause: Any?, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean, maxDepth: Int = 5): Boolean  {
-    return hasPermissions(inferCause(cause, maxDepth) ?: return false, chunk, requiredPermissions)
+    return hasPermissions(inferCause(cause, maxDepth), chunk, requiredPermissions)
 }
 
-fun PureClaims.checkPermissions(cause: Cause, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean = when (cause) {
+fun PureClaims.checkPermissions(cause: Cause?, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean): Boolean = when (cause) {
     is PlayerCause -> checkPermissions(cause.player, chunk, requiredPermissions)
     is ChunkCause -> hasPermissions(cause.chunk, chunk)
+    null -> isLoaded(chunk) && !isClaimed(chunk)
 }
 
 fun PureClaims.checkPermissions(cause: Any?, chunk: Chunk, requiredPermissions: ClaimPermissions.() -> Boolean, maxDepth: Int = 5): Boolean {
-    return checkPermissions(inferCause(cause, maxDepth) ?: return false, chunk, requiredPermissions)
+    return checkPermissions(inferCause(cause, maxDepth), chunk, requiredPermissions)
 }
