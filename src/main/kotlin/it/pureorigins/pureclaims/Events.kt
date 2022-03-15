@@ -83,13 +83,13 @@ object Events : Listener {
 
     @EventHandler
     fun onPistonRetract(e: BlockPistonRetractEvent) {
-        val chunks = e.blocks.map { it.chunk }
+        val chunks = e.blocks.map { it.chunk }.toSet()
         if (chunks.any { !plugin.checkPermissions(e.block, it, EDIT) }) e.isCancelled = true
     }
 
     @EventHandler
     fun onPistonExtend(e: BlockPistonExtendEvent) {
-        val chunks = e.blocks.map { it.getRelative(e.direction).chunk }
+        val chunks = e.blocks.map { it.getRelative(e.direction).chunk }.toSet()
         if (chunks.any { !plugin.checkPermissions(e.block, it, EDIT) }) e.isCancelled = true
     }
 
