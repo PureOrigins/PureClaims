@@ -120,9 +120,8 @@ class PureClaims : JavaPlugin() {
     }
 
     fun highlightChunk(player: Player, chunk: Chunk) {
-        val nmsWorld = player.world.nms
         fun worldBorder(chunk: Chunk) = WorldBorder().apply {
-            world = nmsWorld
+            world = player.world.nms
             setCenter(chunk.x * 16.0 + 8.0, chunk.z * 16.0 + 8.0)
             size = 16.0
             damagePerBlock = 0.0
@@ -131,17 +130,16 @@ class PureClaims : JavaPlugin() {
         }
 
         val newBorder = worldBorder(chunk)
-        val defaultBorder = nmsWorld.worldBorder
-        val nmsPlayer = player.nms
-        nmsPlayer.connection.send(ClientboundInitializeBorderPacket(newBorder))
+        val defaultBorder = player.world.nms.worldBorder
+        player.sendPacket(ClientboundInitializeBorderPacket(newBorder))
         runTaskLater(7) {
-            nmsPlayer.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
+            player.sendPacket(ClientboundInitializeBorderPacket(defaultBorder))
         }
         runTaskLater(14) {
-            nmsPlayer.connection.send(ClientboundInitializeBorderPacket(newBorder))
+            player.sendPacket(ClientboundInitializeBorderPacket(newBorder))
         }
         runTaskLater(21) {
-            nmsPlayer.connection.send(ClientboundInitializeBorderPacket(defaultBorder))
+            player.sendPacket(ClientboundInitializeBorderPacket(defaultBorder))
         }
     }
 
