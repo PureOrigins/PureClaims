@@ -22,27 +22,27 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerMoveEvent
 
 object Events : Listener {
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBreakBlock(e: BlockBreakEvent) {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBlockExplosion(e: BlockExplodeEvent) {
         e.blockList().removeIf { !plugin.hasPermissions(e.block, it.chunk, EDIT) }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onEntityExplosion(e: EntityExplodeEvent) {
         e.blockList().removeIf { !plugin.hasPermissions(e.entity, it.chunk, EDIT) }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onFireSpread(e: BlockIgniteEvent) {
         if (!plugin.checkPermissions(e.ignitingEntity ?: e.ignitingBlock, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBlockPlace(e: BlockPlaceEvent) {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
@@ -56,24 +56,24 @@ object Events : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onInteractEntity(e: PlayerInteractAtEntityEvent) {
         if (!plugin.checkPermissions(e.player, e.rightClicked.chunk, INTERACT)) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onHangingBreak(e: HangingBreakByEntityEvent) {
         if (e.entity is Player) {
             if (!plugin.checkPermissions(e.entity, e.entity.chunk, EDIT)) e.isCancelled = true
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onHangingPlace(e: HangingPlaceEvent) {
         if (!plugin.checkPermissions(e.player, e.entity.chunk, EDIT)) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
         val entity = e.entity
         if (entity !is Player)
@@ -82,24 +82,24 @@ object Events : Listener {
             } else if (!plugin.checkPermissions(e.damager, e.entity.chunk, EDIT)) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onEntityDestroyBlock(e: EntityChangeBlockEvent) {
         if (!plugin.checkPermissions(e.entity, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPistonRetract(e: BlockPistonRetractEvent) {
         val chunks = e.blocks.map { it.chunk }.toSet()
         if (chunks.any { !plugin.checkPermissions(e.block, it, EDIT) }) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPistonExtend(e: BlockPistonExtendEvent) {
         val chunks = e.blocks.map { it.getRelative(e.direction).chunk }.toSet()
         if (chunks.any { !plugin.checkPermissions(e.block, it, EDIT) }) e.isCancelled = true
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onChunkChange(e: PlayerMoveEvent) {
         if (e.from.chunk != e.to.chunk)
             plugin.sendClaimChangeMessage(e.player, plugin.getClaim(e.from), plugin.getClaim(e.to))
