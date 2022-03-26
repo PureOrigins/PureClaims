@@ -3,13 +3,11 @@ package it.pureorigins.pureclaims
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.DAMAGE_MOBS
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.EDIT
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.INTERACT
-import org.bukkit.Material.LAVA
-import org.bukkit.Material.WATER
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
-import org.bukkit.event.EventPriority.*
+import org.bukkit.event.EventPriority.HIGH
 import org.bukkit.event.Listener
 import org.bukkit.event.block.*
 import org.bukkit.event.block.Action.PHYSICAL
@@ -109,6 +107,6 @@ object Events : Listener {
 
     @EventHandler(ignoreCancelled = true)
     fun onLavaFlow(e: BlockFromToEvent) {
-        if (e.block.type != WATER && !plugin.checkPermissions(e.block, e.block.chunk, EDIT)) e.isCancelled = true
+        if (!plugin.checkPermissions(e.block, e.block.chunk, EDIT)) e.isCancelled = true
     }
 }
