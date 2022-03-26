@@ -3,6 +3,8 @@ package it.pureorigins.pureclaims
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.DAMAGE_MOBS
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.EDIT
 import it.pureorigins.pureclaims.ClaimPermissions.Companion.INTERACT
+import org.bukkit.Material.LAVA
+import org.bukkit.Material.WATER
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
@@ -103,5 +105,10 @@ object Events : Listener {
     fun onChunkChange(e: PlayerMoveEvent) {
         if (e.from.chunk != e.to.chunk)
             plugin.sendClaimChangeMessage(e.player, plugin.getClaim(e.from), plugin.getClaim(e.to))
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    fun onLavaFlow(e: BlockFromToEvent) {
+        if (e.block.type != WATER && !plugin.checkPermissions(e.block, e.block.chunk, EDIT)) e.isCancelled = true
     }
 }
