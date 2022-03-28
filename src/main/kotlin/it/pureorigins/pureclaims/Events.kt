@@ -64,8 +64,8 @@ object Events : Listener {
 
     @EventHandler(priority = LOW, ignoreCancelled = true)
     fun onHangingBreak(e: HangingBreakByEntityEvent) {
-        if (e.entity is Player) {
-            if (!plugin.checkPermissions(e.entity, e.entity.chunk, EDIT)) e.isCancelled = true
+        if (e.remover is Player) {
+            if (!plugin.checkPermissions(e.remover, e.entity.chunk, EDIT)) e.isCancelled = true
         }
     }
 
