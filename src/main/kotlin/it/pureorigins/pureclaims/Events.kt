@@ -27,27 +27,17 @@ object Events : Listener {
     fun onBreakBlock(e: BlockBreakEvent) {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
-
-    @EventHandler(priority = LOW, ignoreCancelled = true)
-    fun onBlockExplosion(e: BlockExplodeEvent) {
-        e.blockList().removeIf { !plugin.hasPermissions(e.block, it.chunk, EDIT) }
-    }
-
-    @EventHandler(priority = LOW, ignoreCancelled = true)
-    fun onEntityExplosion(e: EntityExplodeEvent) {
-        e.blockList().removeIf { !plugin.hasPermissions(e.entity, it.chunk, EDIT) }
-    }
-
-    @EventHandler(priority = LOW, ignoreCancelled = true)
-    fun onFireSpread(e: BlockIgniteEvent) {
-        if (!plugin.checkPermissions(e.ignitingEntity ?: e.ignitingBlock, e.block.chunk, EDIT)) e.isCancelled = true
-    }
-
+    
     @EventHandler(priority = LOW, ignoreCancelled = true)
     fun onBlockPlace(e: BlockPlaceEvent) {
         if (!plugin.checkPermissions(e.player, e.block.chunk, EDIT)) e.isCancelled = true
     }
-
+    
+    @EventHandler(priority = LOW, ignoreCancelled = true)
+    fun onBlockExplosion(e: BlockExplodeEvent) {
+        e.blockList().removeIf { !plugin.hasPermissions(e.block, it.chunk, EDIT) }
+    }
+    
     @EventHandler(priority = NORMAL, ignoreCancelled = true)
     fun onInteract(e: PlayerInteractEvent) {
         when(e.action) {
@@ -56,10 +46,20 @@ object Events : Listener {
             else -> {}
         }
     }
-
+    
     @EventHandler(priority = NORMAL, ignoreCancelled = true)
     fun onInteractEntity(e: PlayerInteractAtEntityEvent) {
         if (!plugin.checkPermissions(e.player, e.rightClicked.chunk, INTERACT)) e.isCancelled = true
+    }
+    
+    @EventHandler(priority = LOW, ignoreCancelled = true)
+    fun onEntityExplosion(e: EntityExplodeEvent) {
+        e.blockList().removeIf { !plugin.hasPermissions(e.entity, it.chunk, EDIT) }
+    }
+
+    @EventHandler(priority = LOW, ignoreCancelled = true)
+    fun onFireSpread(e: BlockIgniteEvent) {
+        if (!plugin.checkPermissions(e.ignitingEntity ?: e.ignitingBlock, e.block.chunk, EDIT)) e.isCancelled = true
     }
 
     @EventHandler(priority = LOW, ignoreCancelled = true)
