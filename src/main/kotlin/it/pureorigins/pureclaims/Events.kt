@@ -20,6 +20,7 @@ import org.bukkit.event.hanging.HangingBreakByEntityEvent
 import org.bukkit.event.hanging.HangingPlaceEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerMoveEvent
 
 object Events : Listener {
@@ -105,7 +106,7 @@ object Events : Listener {
         if (!plugin.checkPermissions(e.block, e.block.chunk, EDIT)) e.isCancelled = true
     }
     
-    @EventHandler(priority = LOW, ignoreCancelled = true)
+    @EventHandler
     fun onChunkChange(e: PlayerMoveEvent) {
         if (e.from.chunk != e.to.chunk)
             plugin.sendClaimChangeMessage(e.player, plugin.getClaim(e.from), plugin.getClaim(e.to))
